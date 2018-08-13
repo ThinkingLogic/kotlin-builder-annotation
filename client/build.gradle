@@ -1,0 +1,13 @@
+apply plugin: 'kotlin-kapt'
+
+dependencies {
+    compile project(':builder-annotation')
+
+    kapt project(':builder-processor')
+
+    implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlin_version"
+
+    testCompile group: 'org.junit.jupiter', name: 'junit-jupiter-api', version: '5.2.0'
+    testCompile group: 'com.willowtreeapps.assertk', name: 'assertk', version: '0.10'
+
+}
