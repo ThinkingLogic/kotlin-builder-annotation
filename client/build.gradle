@@ -6,8 +6,10 @@ dependencies {
     kapt project(':builder-processor')
 
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlin_version"
+    implementation "org.jetbrains.kotlin:kotlin-reflect:$kotlin_version"
 
     testCompile group: 'org.junit.jupiter', name: 'junit-jupiter-api', version: '5.2.0'
     testCompile group: 'com.willowtreeapps.assertk', name: 'assertk', version: '0.10'
+    testCompile group: 'org.assertj', name: 'assertj-core', version: '3.10.0'
 
 }
