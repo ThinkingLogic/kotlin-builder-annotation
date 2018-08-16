@@ -4,6 +4,7 @@ import com.squareup.kotlinpoet.*
 import com.thinkinglogic.builder.annotation.Builder
 import org.jetbrains.annotations.NotNull
 import java.io.File
+import java.util.Arrays.asList
 import javax.annotation.processing.*
 import javax.lang.model.SourceVersion
 import javax.lang.model.element.Element
@@ -24,6 +25,7 @@ class BuilderProcessor : AbstractProcessor() {
 
     companion object {
         const val KAPT_KOTLIN_GENERATED_OPTION_NAME = "kapt.kotlin.generated"
+        const val CHECK_REQUIRED_FIELDS_FUNCTION_NAME = "checkRequiredFields"
     }
 
     override fun process(annotations: MutableSet<out TypeElement>?, roundEnv: RoundEnvironment): Boolean {
@@ -71,7 +73,8 @@ class BuilderProcessor : AbstractProcessor() {
             classBuilder.addFunction(field.asSetterFunctionReturning(builderClass))
         }
 
-        classBuilder.addFunction(createBuildFunction(fieldsInClass, annotatedClass.simpleName))
+        classBuilder.addFunction(createBuildFunction(fieldsInClass, annotatedClass))
+        classBuilder.addFunction(createCheckRequiredFieldsFunction(fieldsInClass))
 
         FileSpec.builder(packageName, builderClassName)
                 .addType(classBuilder.build())
@@ -79,23 +82,39 @@ class BuilderProcessor : AbstractProcessor() {
                 .writeTo(sourceRootFile)
     }
 
-    private fun createBuildFunction(fieldInClass: List<Element>, returnType: Name): FunSpec {
-        val buildFunctionContent = StringBuilder("return $returnType(")
+    private fun createBuildFunction(fieldInClass: List<Element>, returnType: TypeElement): FunSpec {
+        val code = StringBuilder("$CHECK_REQUIRED_FIELDS_FUNCTION_NAME()")
+        code.appendln().append("return ${returnType.simpleName}(")
         val iterator = fieldInClass.listIterator()
         while (iterator.hasNext()) {
             val field = iterator.next()
-            buildFunctionContent.appendln().append("    ${field.simpleName} = ${field.simpleName}")
+            code.appendln().append("    ${field.simpleName} = ${field.simpleName}")
             if (!field.isNullable()) {
-                buildFunctionContent.append("!!")
+                code.append("!!")
             }
             if (iterator.hasNext()) {
-                buildFunctionContent.append(",")
+                code.append(",")
             }
         }
-        buildFunctionContent.appendln().append(")").appendln()
+        code.appendln().append(")").appendln()
 
         return FunSpec.builder("build")
-                .addCode(buildFunctionContent.toString())
+                .returns(returnType.asClassName())
+                .addCode(code.toString())
+                .build()
+    }
+
+    private fun createCheckRequiredFieldsFunction(fieldInClass: List<Element>): FunSpec {
+        val code = StringBuilder()
+        fieldInClass
+                .filterNot { it.isNullable() }
+                .forEach { field ->
+                    code.append("    check(${field.simpleName} != null, {\"${field.simpleName} must not be null\"})").appendln()
+                }
+
+        return FunSpec.builder(CHECK_REQUIRED_FIELDS_FUNCTION_NAME)
+                .addCode(code.toString())
+                .addModifiers(KModifier.PRIVATE)
                 .build()
     }
 
@@ -123,9 +142,9 @@ class BuilderProcessor : AbstractProcessor() {
     }
 
     private fun Element.asProperty(): PropertySpec =
-        PropertySpec.varBuilder(simpleName.toString(), className().asNullable(), KModifier.PRIVATE)
-                .initializer("null")
-                .build()
+            PropertySpec.varBuilder(simpleName.toString(), className().asNullable(), KModifier.PRIVATE)
+                    .initializer("null")
+                    .build()
 
     private fun Element.asSetterFunctionReturning(returnType: ClassName): FunSpec {
         val fieldClassName = className()
@@ -133,7 +152,7 @@ class BuilderProcessor : AbstractProcessor() {
         return FunSpec.builder(simpleName.toString())
                 .addParameter(ParameterSpec.builder("value", parameterClass).build())
                 .returns(returnType)
-                .addCode("return apply { $simpleName = value }")
+                .addCode("return apply { $simpleName = value }\n")
                 .build()
     }
 
