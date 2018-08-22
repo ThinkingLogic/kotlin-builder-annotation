@@ -1,18 +1,22 @@
 package com.thinkinglogic.builder.processor
 
 import com.squareup.kotlinpoet.*
+import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
 import com.thinkinglogic.builder.annotation.Builder
 import org.jetbrains.annotations.NotNull
 import java.io.File
-import java.util.Arrays.asList
+import java.util.stream.Collectors
 import javax.annotation.processing.*
 import javax.lang.model.SourceVersion
 import javax.lang.model.element.Element
-import javax.lang.model.element.Name
 import javax.lang.model.element.TypeElement
+import javax.lang.model.type.ArrayType
+import javax.lang.model.type.DeclaredType
 import javax.lang.model.type.PrimitiveType
+import javax.lang.model.type.TypeMirror
 import javax.lang.model.util.ElementFilter.fieldsIn
-import javax.tools.Diagnostic.Kind.*
+import javax.tools.Diagnostic.Kind.ERROR
+import javax.tools.Diagnostic.Kind.NOTE
 
 /**
  * Kapt processor for the @Builder annotation.
@@ -63,21 +67,21 @@ class BuilderProcessor : AbstractProcessor() {
 
         processingEnv.noteMessage { "Writing $packageName.$builderClassName" }
 
-        val classBuilder = TypeSpec.classBuilder(builderClassName)
+        val builderSpec = TypeSpec.classBuilder(builderClassName)
         val builderClass = ClassName(packageName, builderClassName)
         val fieldsInClass = fieldsIn(processingEnv.elementUtils.getAllMembers(annotatedClass))
 
         fieldsInClass.forEach { field ->
             processingEnv.noteMessage { "Adding field: $field" }
-            classBuilder.addProperty(field.asProperty())
-            classBuilder.addFunction(field.asSetterFunctionReturning(builderClass))
+            builderSpec.addProperty(field.asProperty())
+            builderSpec.addFunction(field.asSetterFunctionReturning(builderClass))
         }
 
-        classBuilder.addFunction(createBuildFunction(fieldsInClass, annotatedClass))
-        classBuilder.addFunction(createCheckRequiredFieldsFunction(fieldsInClass))
+        builderSpec.addFunction(createBuildFunction(fieldsInClass, annotatedClass))
+        builderSpec.addFunction(createCheckRequiredFieldsFunction(fieldsInClass))
 
         FileSpec.builder(packageName, builderClassName)
-                .addType(classBuilder.build())
+                .addType(builderSpec.build())
                 .build()
                 .writeTo(sourceRootFile)
     }
@@ -118,18 +122,44 @@ class BuilderProcessor : AbstractProcessor() {
                 .build()
     }
 
-    private fun Element.className(): ClassName {
-        var className = this.asTypeElement().asClassName()
-        if (className.packageName == "java.lang") {
-            className = Class.forName(className.canonicalName).kotlin.asClassName()
-        }
-        return className
+    private fun Element.asKotlinTypeName(): TypeName {
+        return asType().asKotlinTypeName()
     }
 
-    private fun Element.asTypeElement(): TypeElement {
-        val element = processingEnv.typeUtils.asElement(this.asType()) ?: processingEnv.typeUtils.boxedClass(this.asType() as PrimitiveType?)
-        return element as TypeElement
+    private fun TypeMirror.asKotlinTypeName(): TypeName {
+        return when (this) {
+            is PrimitiveType -> processingEnv.typeUtils.boxedClass(this as PrimitiveType?).asKotlinClassName()
+            is ArrayType -> {
+                val arrayClass = ClassName("kotlin", "Array")
+                return arrayClass.parameterizedBy(this.componentType.asKotlinTypeName())
+            }
+            is DeclaredType -> {
+                val typeName = this.asTypeElement().asKotlinClassName()
+                if (!this.typeArguments.isEmpty()) {
+                    val kotlinTypeArguments = typeArguments.stream()
+                            .map { it.asKotlinTypeName() }
+                            .collect(Collectors.toList())
+                            .toTypedArray()
+                    return typeName.parameterizedBy(*kotlinTypeArguments)
+                }
+                return typeName
+            }
+            else -> this.asTypeElement().asKotlinClassName()
+        }
     }
+
+    private fun TypeElement.asKotlinClassName(): ClassName {
+        val className = asClassName()
+        return try {
+            // ensure that java.lang.* and java.util.* etc classes are converted to their kotlin equivalents
+            Class.forName(className.canonicalName).kotlin.asClassName()
+        } catch (e: ClassNotFoundException) {
+            // probably part of the same source tree as the annotated class
+            className
+        }
+    }
+
+    private fun TypeMirror.asTypeElement() = processingEnv.typeUtils.asElement(this) as TypeElement
 
     private fun Element.isNullable(): Boolean {
         if (this.asType() is PrimitiveType) {
@@ -142,13 +172,17 @@ class BuilderProcessor : AbstractProcessor() {
     }
 
     private fun Element.asProperty(): PropertySpec =
-            PropertySpec.varBuilder(simpleName.toString(), className().asNullable(), KModifier.PRIVATE)
+            PropertySpec.varBuilder(simpleName.toString(), asKotlinTypeName().asNullable(), KModifier.PRIVATE)
                     .initializer("null")
                     .build()
 
     private fun Element.asSetterFunctionReturning(returnType: ClassName): FunSpec {
-        val fieldClassName = className()
-        val parameterClass = (if (isNullable()) fieldClassName.asNullable() else fieldClassName)
+        val fieldType = asKotlinTypeName()
+        val parameterClass = if (isNullable()) {
+            fieldType.asNullable()
+        } else {
+            fieldType
+        }
         return FunSpec.builder(simpleName.toString())
                 .addParameter(ParameterSpec.builder("value", parameterClass).build())
                 .returns(returnType)
