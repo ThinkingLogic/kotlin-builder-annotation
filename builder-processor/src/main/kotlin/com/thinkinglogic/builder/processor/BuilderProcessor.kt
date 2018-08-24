@@ -3,6 +3,7 @@ package com.thinkinglogic.builder.processor
 import com.squareup.kotlinpoet.*
 import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
 import com.thinkinglogic.builder.annotation.Builder
+import com.thinkinglogic.builder.annotation.NullableType
 import org.jetbrains.annotations.NotNull
 import java.io.File
 import java.util.stream.Collectors
@@ -122,8 +123,39 @@ class BuilderProcessor : AbstractProcessor() {
                 .build()
     }
 
+    private fun Element.asProperty(): PropertySpec =
+            PropertySpec.varBuilder(simpleName.toString(), asKotlinTypeName().asNullable(), KModifier.PRIVATE)
+                    .initializer("null")
+                    .build()
+
+    private fun Element.asSetterFunctionReturning(returnType: ClassName): FunSpec {
+        val fieldType = asKotlinTypeName()
+        val parameterClass = if (isNullable()) {
+            fieldType.asNullable()
+        } else {
+            fieldType
+        }
+        return FunSpec.builder(simpleName.toString())
+                .addParameter(ParameterSpec.builder("value", parameterClass).build())
+                .returns(returnType)
+                .addCode("return apply { $simpleName = value }\n")
+                .build()
+    }
+
     private fun Element.asKotlinTypeName(): TypeName {
-        return asType().asKotlinTypeName()
+        val typeName = asType().asKotlinTypeName()
+        if (hasAnnotation(NullableType::class.java) && typeName is ParameterizedTypeName) {
+            if (typeName.typeArguments.isEmpty()) {
+                this.errorMessage { "NullableType annotation should not be applied to a property without type arguments!" }
+                return typeName
+            }
+            val lastType = typeName.typeArguments.last().asNullable()
+            val typeArguments = ArrayList<TypeName>()
+            typeArguments.addAll(typeName.typeArguments.dropLast(1))
+            typeArguments.add(lastType)
+            return typeName.rawType.parameterizedBy(*typeArguments.toTypedArray())
+        }
+        return typeName
     }
 
     private fun TypeMirror.asKotlinTypeName(): TypeName {
@@ -165,29 +197,14 @@ class BuilderProcessor : AbstractProcessor() {
         if (this.asType() is PrimitiveType) {
             return false
         }
-        return !this.annotationMirrors
-                .map { it.annotationType.toString() }
-                .toSet()
-                .contains(NotNull::class.java.name)
+        return !hasAnnotation(NotNull::class.java)
     }
 
-    private fun Element.asProperty(): PropertySpec =
-            PropertySpec.varBuilder(simpleName.toString(), asKotlinTypeName().asNullable(), KModifier.PRIVATE)
-                    .initializer("null")
-                    .build()
-
-    private fun Element.asSetterFunctionReturning(returnType: ClassName): FunSpec {
-        val fieldType = asKotlinTypeName()
-        val parameterClass = if (isNullable()) {
-            fieldType.asNullable()
-        } else {
-            fieldType
-        }
-        return FunSpec.builder(simpleName.toString())
-                .addParameter(ParameterSpec.builder("value", parameterClass).build())
-                .returns(returnType)
-                .addCode("return apply { $simpleName = value }\n")
-                .build()
+    private fun Element.hasAnnotation(annotationClass: Class<*>): Boolean {
+        return this.annotationMirrors
+                .map { it.annotationType.toString() }
+                .toSet()
+                .contains(annotationClass.name)
     }
 
     private fun Element.errorMessage(message: () -> String) {

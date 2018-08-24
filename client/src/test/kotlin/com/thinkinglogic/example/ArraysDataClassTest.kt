@@ -13,7 +13,7 @@ internal class ArraysDataClassTest {
                 arrayOfDates = arrayOf(LocalDate.now(), LocalDate.MIN),
                 arrayOfLongs = arrayOf(1L),
                 arrayOfStrings = arrayOf("one", "two"),
-                // todo: arrayOfNullableStrings = arrayOf("foo", null),
+                arrayOfNullableStrings = arrayOf("foo", null),
                 arrayOfListOfStrings = arrayOf()
         )
 

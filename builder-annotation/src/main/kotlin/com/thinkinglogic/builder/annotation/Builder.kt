@@ -6,5 +6,13 @@ package com.thinkinglogic.builder.annotation
  */
 @Retention(AnnotationRetention.SOURCE)
 @Target(AnnotationTarget.CLASS)
-annotation class Builder {
-}
+annotation class Builder
+
+/**
+ * Use this annotation to mark a collection or array as one allowed to contain null values.
+ */
+@Retention(AnnotationRetention.SOURCE)
+@Target(AnnotationTarget.FIELD)
+annotation class NullableType
+
+

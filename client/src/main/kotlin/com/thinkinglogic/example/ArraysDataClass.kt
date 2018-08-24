@@ -1,6 +1,7 @@
 package com.thinkinglogic.example
 
 import com.thinkinglogic.builder.annotation.Builder
+import com.thinkinglogic.builder.annotation.NullableType
 import java.time.LocalDate
 import java.util.*
 
@@ -8,7 +9,7 @@ import java.util.*
 data class ArraysDataClass(
         val arrayOfLongs: Array<Long>,
         val arrayOfStrings: Array<String>,
-        // todo: val arrayOfNullableStrings: Array<String?>,
+        @NullableType val arrayOfNullableStrings: Array<String?>,
         val arrayOfListOfStrings: Array<List<String>>,
         val arrayOfDates: Array<LocalDate>
 
@@ -21,6 +22,7 @@ data class ArraysDataClass(
 
         if (!Arrays.equals(arrayOfLongs, other.arrayOfLongs)) return false
         if (!Arrays.equals(arrayOfStrings, other.arrayOfStrings)) return false
+        if (!Arrays.equals(arrayOfNullableStrings, other.arrayOfNullableStrings)) return false
         if (!Arrays.equals(arrayOfListOfStrings, other.arrayOfListOfStrings)) return false
         if (!Arrays.equals(arrayOfDates, other.arrayOfDates)) return false
 
@@ -30,6 +32,7 @@ data class ArraysDataClass(
     override fun hashCode(): Int {
         var result = Arrays.hashCode(arrayOfLongs)
         result = 31 * result + Arrays.hashCode(arrayOfStrings)
+        result = 31 * result + Arrays.hashCode(arrayOfNullableStrings)
         result = 31 * result + Arrays.hashCode(arrayOfListOfStrings)
         result = 31 * result + Arrays.hashCode(arrayOfDates)
         return result

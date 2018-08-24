@@ -15,7 +15,9 @@ internal class CollectionsDataClassTest {
                 collectionOfDates = listOf(LocalDate.now()),
                 listOfStrings = listOf("Foo", "bar"),
                 setOfLongs = setOf(3L, 4L),
-                treeMap = TreeMap()
+                setOfNullableLongs = setOf(3L, null),
+                treeMap = TreeMap(),
+                mapOfStringToNullableDates = mapOf("foo" to LocalDate.MAX, "bar" to null)
         )
 
         // when
@@ -25,6 +27,7 @@ internal class CollectionsDataClassTest {
                 .listOfStrings(expected.listOfStrings)
                 .setOfLongs(expected.setOfLongs)
                 .treeMap(expected.treeMap)
+                .mapOfStringToNullableDates(expected.mapOfStringToNullableDates)
                 .build()
 
         // then

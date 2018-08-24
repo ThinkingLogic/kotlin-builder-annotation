@@ -1,6 +1,7 @@
 package com.thinkinglogic.example
 
 import com.thinkinglogic.builder.annotation.Builder
+import com.thinkinglogic.builder.annotation.NullableType
 import java.time.LocalDate
 import java.util.*
 
@@ -9,10 +10,10 @@ data class CollectionsDataClass(
         val listOfStrings: List<String>,
         // todo val mutableListOfStrings: MutableList<String>,
         val setOfLongs: Set<Long>,
-        // todo: val setOfNullableLongs: Set<Long?>,
+        @NullableType val setOfNullableLongs: Set<Long?>,
         val hashSet: HashSet<Long>,
         val collectionOfDates: Collection<LocalDate>,
-        // todo val mapOfStringToDates: Map<String, LocalDate>,
+        @NullableType val mapOfStringToNullableDates: Map<String, LocalDate?>,
         val treeMap: TreeMap<String, LocalDate>
 
 )
