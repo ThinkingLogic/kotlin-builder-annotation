@@ -9,7 +9,7 @@ package com.thinkinglogic.builder.annotation
 annotation class Builder
 
 /**
- * Use this annotation to mark a collection or array as one allowed to contain null values.
+ * Use this annotation to mark a collection or array as being allowed to contain null values.
  */
 @Retention(AnnotationRetention.SOURCE)
 @Target(AnnotationTarget.FIELD)

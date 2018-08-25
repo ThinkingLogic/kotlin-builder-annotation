@@ -11,10 +11,12 @@ import javax.annotation.processing.*
 import javax.lang.model.SourceVersion
 import javax.lang.model.element.Element
 import javax.lang.model.element.TypeElement
+import javax.lang.model.element.VariableElement
 import javax.lang.model.type.ArrayType
 import javax.lang.model.type.DeclaredType
 import javax.lang.model.type.PrimitiveType
 import javax.lang.model.type.TypeMirror
+import javax.lang.model.util.ElementFilter.constructorsIn
 import javax.lang.model.util.ElementFilter.fieldsIn
 import javax.tools.Diagnostic.Kind.ERROR
 import javax.tools.Diagnostic.Kind.NOTE
@@ -62,24 +64,24 @@ class BuilderProcessor : AbstractProcessor() {
         return false
     }
 
-    private fun writeBuilderForClass(annotatedClass: TypeElement, sourceRootFile: File) {
-        val packageName = processingEnv.elementUtils.getPackageOf(annotatedClass).toString()
-        val builderClassName = "${annotatedClass.simpleName}Builder"
+    private fun writeBuilderForClass(classToBuild: TypeElement, sourceRootFile: File) {
+        val packageName = processingEnv.elementUtils.getPackageOf(classToBuild).toString()
+        val builderClassName = "${classToBuild.simpleName}Builder"
 
         processingEnv.noteMessage { "Writing $packageName.$builderClassName" }
 
         val builderSpec = TypeSpec.classBuilder(builderClassName)
         val builderClass = ClassName(packageName, builderClassName)
-        val fieldsInClass = fieldsIn(processingEnv.elementUtils.getAllMembers(annotatedClass))
+        val fields = classToBuild.fieldsForBuilder()
 
-        fieldsInClass.forEach { field ->
+        fields.forEach { field ->
             processingEnv.noteMessage { "Adding field: $field" }
             builderSpec.addProperty(field.asProperty())
             builderSpec.addFunction(field.asSetterFunctionReturning(builderClass))
         }
 
-        builderSpec.addFunction(createBuildFunction(fieldsInClass, annotatedClass))
-        builderSpec.addFunction(createCheckRequiredFieldsFunction(fieldsInClass))
+        builderSpec.addFunction(createBuildFunction(fields, classToBuild))
+        builderSpec.addFunction(createCheckRequiredFieldsFunction(fields))
 
         FileSpec.builder(packageName, builderClassName)
                 .addType(builderSpec.build())
@@ -87,10 +89,24 @@ class BuilderProcessor : AbstractProcessor() {
                 .writeTo(sourceRootFile)
     }
 
-    private fun createBuildFunction(fieldInClass: List<Element>, returnType: TypeElement): FunSpec {
+    /**
+     * Returns all fields in this type that also appear as a constructor parameter.
+     */
+    private fun TypeElement.fieldsForBuilder(): List<VariableElement> {
+        val allMembers = processingEnv.elementUtils.getAllMembers(this)
+        val fields = fieldsIn(allMembers)
+        val constructors = constructorsIn(allMembers)
+        val constructorParamNames = constructors
+                .flatMap { it.parameters }
+                .map { it.simpleName.toString()}
+                .toSet()
+        return fields.filter { constructorParamNames.contains(it.simpleName.toString()) }
+    }
+
+    private fun createBuildFunction(fields: List<Element>, returnType: TypeElement): FunSpec {
         val code = StringBuilder("$CHECK_REQUIRED_FIELDS_FUNCTION_NAME()")
         code.appendln().append("return ${returnType.simpleName}(")
-        val iterator = fieldInClass.listIterator()
+        val iterator = fields.listIterator()
         while (iterator.hasNext()) {
             val field = iterator.next()
             code.appendln().append("    ${field.simpleName} = ${field.simpleName}")
@@ -109,9 +125,9 @@ class BuilderProcessor : AbstractProcessor() {
                 .build()
     }
 
-    private fun createCheckRequiredFieldsFunction(fieldInClass: List<Element>): FunSpec {
+    private fun createCheckRequiredFieldsFunction(fields: List<Element>): FunSpec {
         val code = StringBuilder()
-        fieldInClass
+        fields
                 .filterNot { it.isNullable() }
                 .forEach { field ->
                     code.append("    check(${field.simpleName} != null, {\"${field.simpleName} must not be null\"})").appendln()
