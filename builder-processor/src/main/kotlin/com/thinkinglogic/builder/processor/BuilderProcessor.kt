@@ -58,13 +58,16 @@ class BuilderProcessor : AbstractProcessor() {
                 return@forEach
             }
 
-            writeBuilderForClass(annotatedClass, sourceRootFile)
+            writeBuilder(annotatedClass, sourceRootFile)
         }
 
         return false
     }
 
-    private fun writeBuilderForClass(classToBuild: TypeElement, sourceRootFile: File) {
+    /**
+     * Writes the source code to create a builder for [classToBuild] within the [sourceRoot] directory.
+     */
+    private fun writeBuilder(classToBuild: TypeElement, sourceRoot: File) {
         val packageName = processingEnv.elementUtils.getPackageOf(classToBuild).toString()
         val builderClassName = "${classToBuild.simpleName}Builder"
 
@@ -86,7 +89,7 @@ class BuilderProcessor : AbstractProcessor() {
         FileSpec.builder(packageName, builderClassName)
                 .addType(builderSpec.build())
                 .build()
-                .writeTo(sourceRootFile)
+                .writeTo(sourceRoot)
     }
 
     /**
@@ -103,6 +106,9 @@ class BuilderProcessor : AbstractProcessor() {
         return fields.filter { constructorParamNames.contains(it.simpleName.toString()) }
     }
 
+    /**
+     * Creates a 'build()' function that will invoke a constructor for [returnType], passing [fields] as arguments and returning the new instance.
+     */
     private fun createBuildFunction(fields: List<Element>, returnType: TypeElement): FunSpec {
         val code = StringBuilder("$CHECK_REQUIRED_FIELDS_FUNCTION_NAME()")
         code.appendln().append("return ${returnType.simpleName}(")
@@ -125,6 +131,9 @@ class BuilderProcessor : AbstractProcessor() {
                 .build()
     }
 
+    /**
+     * Creates a function that will invoke [check] to confirm that each required field is populated.
+     */
     private fun createCheckRequiredFieldsFunction(fields: List<Element>): FunSpec {
         val code = StringBuilder()
         fields
@@ -139,12 +148,18 @@ class BuilderProcessor : AbstractProcessor() {
                 .build()
     }
 
+    /**
+     * Creates a property for the field identified by this element.
+     */
     private fun Element.asProperty(): PropertySpec =
             PropertySpec.varBuilder(simpleName.toString(), asKotlinTypeName().asNullable(), KModifier.PRIVATE)
                     .initializer("null")
                     .build()
 
-    private fun Element.asSetterFunctionReturning(returnType: ClassName): FunSpec {
+    /**
+     * Creates a function that sets the property identified by this element, and returns the [builder].
+     */
+    private fun Element.asSetterFunctionReturning(builder: ClassName): FunSpec {
         val fieldType = asKotlinTypeName()
         val parameterClass = if (isNullable()) {
             fieldType.asNullable()
@@ -153,18 +168,23 @@ class BuilderProcessor : AbstractProcessor() {
         }
         return FunSpec.builder(simpleName.toString())
                 .addParameter(ParameterSpec.builder("value", parameterClass).build())
-                .returns(returnType)
+                .returns(builder)
                 .addCode("return apply { $simpleName = value }\n")
                 .build()
     }
 
+    /**
+     * Converts this element to a [TypeName], ensuring that java types such as [java.lang.String] are converted to their Kotlin equivalent.
+     */
     private fun Element.asKotlinTypeName(): TypeName {
         val typeName = asType().asKotlinTypeName()
         if (hasAnnotation(NullableType::class.java) && typeName is ParameterizedTypeName) {
+            // for example '@NullableType List<String?>' or '@NullableType Map<String, Long?>'
             if (typeName.typeArguments.isEmpty()) {
                 this.errorMessage { "NullableType annotation should not be applied to a property without type arguments!" }
                 return typeName
             }
+            // mark the element type contained by the collection/map as nullable
             val lastType = typeName.typeArguments.last().asNullable()
             val typeArguments = ArrayList<TypeName>()
             typeArguments.addAll(typeName.typeArguments.dropLast(1))
@@ -174,6 +194,9 @@ class BuilderProcessor : AbstractProcessor() {
         return typeName
     }
 
+    /**
+     * Converts this TypeMirror to a [TypeName], ensuring that java types such as [java.lang.String] are converted to their Kotlin equivalent.
+     */
     private fun TypeMirror.asKotlinTypeName(): TypeName {
         return when (this) {
             is PrimitiveType -> processingEnv.typeUtils.boxedClass(this as PrimitiveType?).asKotlinClassName()
@@ -196,6 +219,9 @@ class BuilderProcessor : AbstractProcessor() {
         }
     }
 
+    /**
+     * Converts this element to a [ClassName], ensuring that java types such as [java.lang.String] are converted to their Kotlin equivalent.
+     */
     private fun TypeElement.asKotlinClassName(): ClassName {
         val className = asClassName()
         return try {
