@@ -3,6 +3,7 @@ package com.thinkinglogic.builder.processor
 import com.squareup.kotlinpoet.*
 import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
 import com.thinkinglogic.builder.annotation.Builder
+import com.thinkinglogic.builder.annotation.Mutable
 import com.thinkinglogic.builder.annotation.NullableType
 import org.jetbrains.annotations.NotNull
 import java.io.File
@@ -33,6 +34,12 @@ class BuilderProcessor : AbstractProcessor() {
     companion object {
         const val KAPT_KOTLIN_GENERATED_OPTION_NAME = "kapt.kotlin.generated"
         const val CHECK_REQUIRED_FIELDS_FUNCTION_NAME = "checkRequiredFields"
+        val MUTABLE_COLLECTIONS = mapOf(
+                List::class.asClassName() to ClassName("kotlin.collections", "MutableList"),
+                Set::class.asClassName() to ClassName("kotlin.collections", "MutableSet"),
+                Collection::class.asClassName() to ClassName("kotlin.collections", "MutableCollection"),
+                Map::class.asClassName() to ClassName("kotlin.collections", "MutableMap"),
+                Iterator::class.asClassName() to ClassName("kotlin.collections", "MutableIterator"))
     }
 
     override fun process(annotations: MutableSet<out TypeElement>?, roundEnv: RoundEnvironment): Boolean {
@@ -101,7 +108,7 @@ class BuilderProcessor : AbstractProcessor() {
         val constructors = constructorsIn(allMembers)
         val constructorParamNames = constructors
                 .flatMap { it.parameters }
-                .map { it.simpleName.toString()}
+                .map { it.simpleName.toString() }
                 .toSet()
         return fields.filter { constructorParamNames.contains(it.simpleName.toString()) }
     }
@@ -174,24 +181,59 @@ class BuilderProcessor : AbstractProcessor() {
     }
 
     /**
-     * Converts this element to a [TypeName], ensuring that java types such as [java.lang.String] are converted to their Kotlin equivalent.
+     * Converts this element to a [TypeName], ensuring that java types such as [java.lang.String] are converted to their Kotlin equivalent,
+     * also converting the TypeName according to any [NullableType] and [Mutable] annotations.
      */
     private fun Element.asKotlinTypeName(): TypeName {
-        val typeName = asType().asKotlinTypeName()
-        if (hasAnnotation(NullableType::class.java) && typeName is ParameterizedTypeName) {
-            // for example '@NullableType List<String?>' or '@NullableType Map<String, Long?>'
-            if (typeName.typeArguments.isEmpty()) {
-                this.errorMessage { "NullableType annotation should not be applied to a property without type arguments!" }
-                return typeName
+        var typeName = asType().asKotlinTypeName()
+        if (typeName is ParameterizedTypeName) {
+            if (hasAnnotation(NullableType::class.java)
+                    && verify(typeName.typeArguments.isNotEmpty(), "NullableType annotation should not be applied to a property without type arguments!")) {
+                typeName = typeName.withNullableType()
             }
-            // mark the element type contained by the collection/map as nullable
-            val lastType = typeName.typeArguments.last().asNullable()
-            val typeArguments = ArrayList<TypeName>()
-            typeArguments.addAll(typeName.typeArguments.dropLast(1))
-            typeArguments.add(lastType)
-            return typeName.rawType.parameterizedBy(*typeArguments.toTypedArray())
+            if (hasAnnotation(Mutable::class.java)
+                    && verify(MUTABLE_COLLECTIONS.containsKey(typeName.rawType), "Mutable annotation should not be applied to non-mutable collections!")) {
+                typeName = typeName.asMutableCollection()
+            }
         }
         return typeName
+    }
+
+    /**
+     * Returns the given [fact], logging an error message if it is not true.
+     */
+    private fun Element.verify(fact: Boolean, message: String): Boolean {
+        if (!fact) {
+            this.errorMessage { message }
+        }
+        return fact
+    }
+
+    /**
+     * Converts this type to one containing nullable elements.
+     *
+     * For instance `List<String>` is converted to `List<String?>`, `Map<String, String>` to `Map<String, String?>`).
+     * @throws NoSuchElementException if [this.typeArguments] is empty.
+     */
+    private fun ParameterizedTypeName.withNullableType(): ParameterizedTypeName {
+        val lastType = this.typeArguments.last().asNullable()
+        val typeArguments = ArrayList<TypeName>()
+        typeArguments.addAll(this.typeArguments.dropLast(1))
+        typeArguments.add(lastType)
+        return this.rawType.parameterizedBy(*typeArguments.toTypedArray())
+    }
+
+    /**
+     * Converts this type to its mutable equivalent.
+     *
+     * For instance `List<String>` is converted to `MutableList<String>`.
+     * @throws NullPointerException if [this.rawType] cannot be mapped to a mutable collection
+     */
+    private fun ParameterizedTypeName.asMutableCollection(): ParameterizedTypeName {
+        val mutable = MUTABLE_COLLECTIONS[rawType]!!
+                .parameterizedBy(*this.typeArguments.toTypedArray())
+                .annotated(this.annotations)
+        return if (nullable) { mutable.asNullable() } else { mutable }
     }
 
     /**
