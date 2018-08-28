@@ -3,6 +3,7 @@ package com.thinkinglogic.builder.processor
 import com.squareup.kotlinpoet.*
 import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
 import com.thinkinglogic.builder.annotation.Builder
+import com.thinkinglogic.builder.annotation.DefaultValue
 import com.thinkinglogic.builder.annotation.Mutable
 import com.thinkinglogic.builder.annotation.NullableType
 import org.jetbrains.annotations.NotNull
@@ -160,8 +161,25 @@ class BuilderProcessor : AbstractProcessor() {
      */
     private fun Element.asProperty(): PropertySpec =
             PropertySpec.varBuilder(simpleName.toString(), asKotlinTypeName().asNullable(), KModifier.PRIVATE)
-                    .initializer("null")
+                    .initializer("${defaultValue()}")
                     .build()
+
+    /**
+     * Returns the correct default value for this element - the value of any [DefaultValue] annotation, or "null".
+     */
+    private fun Element.defaultValue(): String {
+        return if (hasAnnotation(DefaultValue::class.java)) {
+            val default = this.getAnnotation(DefaultValue::class.java).value
+            // make sure that strings are wrapped in quotes
+            return if (asType().toString() == "java.lang.String" && !default.startsWith("\"")) {
+                "\"$default\""
+            } else {
+                default
+            }
+        } else {
+            "null"
+        }
+    }
 
     /**
      * Creates a function that sets the property identified by this element, and returns the [builder].

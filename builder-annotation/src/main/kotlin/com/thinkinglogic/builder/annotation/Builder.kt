@@ -23,3 +23,11 @@ annotation class NullableType
 @Retention(AnnotationRetention.SOURCE)
 @Target(AnnotationTarget.FIELD)
 annotation class Mutable
+
+/**
+ * Use this annotation to provide a default value for the builder,
+ * as knowledge of default values is otherwise lost during annotation processing.
+ */
+@Retention(AnnotationRetention.SOURCE)
+@Target(AnnotationTarget.FIELD)
+annotation class DefaultValue (val value: String = "")

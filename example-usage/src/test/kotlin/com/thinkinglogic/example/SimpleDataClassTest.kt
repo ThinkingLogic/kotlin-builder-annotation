@@ -12,6 +12,7 @@ internal class SimpleDataClassTest {
     fun `builder should create object with correct properties`() {
         // given
         val expected = SimpleDataClass(
+                notNullString = "foo",
                 nullableString = null,
                 notNullLong = 123,
                 nullableLong = 345,
@@ -21,6 +22,30 @@ internal class SimpleDataClassTest {
         // when
         val actual = SimpleDataClassBuilder()
                 .notNullString(expected.notNullString)
+                .notNullLong(expected.notNullLong)
+                .nullableLong(expected.nullableLong)
+                .date(expected.date)
+                .stringWithDefault(expected.stringWithDefault)
+                .defaultDate(expected.defaultDate)
+                .build()
+
+        // then
+        assert(actual).isEqualTo(expected)
+    }
+
+    @Test
+    fun `builder should create object with default properties`() {
+        // given
+        val expected = SimpleDataClass(
+                notNullString = "not null",
+                nullableString = null,
+                notNullLong = 123,
+                nullableLong = 345,
+                date = LocalDate.now()
+        )
+
+        // when
+        val actual = SimpleDataClassBuilder()
                 .notNullLong(expected.notNullLong)
                 .nullableLong(expected.nullableLong)
                 .date(expected.date)
@@ -34,7 +59,6 @@ internal class SimpleDataClassTest {
     fun `build method should throw exception if required property not set`() {
         // given
         val builder = SimpleDataClassBuilder()
-                .nullableLong(123)
 
         // when
         var expected = catch { builder.build() }
