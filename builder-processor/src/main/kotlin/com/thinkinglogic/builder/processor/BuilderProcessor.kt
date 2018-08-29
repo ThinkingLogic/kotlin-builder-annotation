@@ -8,12 +8,11 @@ import com.thinkinglogic.builder.annotation.Mutable
 import com.thinkinglogic.builder.annotation.NullableType
 import org.jetbrains.annotations.NotNull
 import java.io.File
+import java.util.*
 import java.util.stream.Collectors
 import javax.annotation.processing.*
 import javax.lang.model.SourceVersion
-import javax.lang.model.element.Element
-import javax.lang.model.element.TypeElement
-import javax.lang.model.element.VariableElement
+import javax.lang.model.element.*
 import javax.lang.model.type.ArrayType
 import javax.lang.model.type.DeclaredType
 import javax.lang.model.type.PrimitiveType
@@ -60,22 +59,29 @@ class BuilderProcessor : AbstractProcessor() {
         val sourceRootFile = File(generatedSourcesRoot)
         sourceRootFile.mkdir()
 
-        annotatedElements.forEach { annotatedClass ->
-            if (annotatedClass !is TypeElement) {
-                annotatedClass.errorMessage { "Invalid element type, expected a class" }
-                return@forEach
+        annotatedElements.forEach { annotatedElement ->
+            when (annotatedElement.kind) {
+                ElementKind.CLASS -> writeBuilderForClass(annotatedElement as TypeElement, sourceRootFile)
+                ElementKind.CONSTRUCTOR -> writeBuilderForConstructor(annotatedElement as ExecutableElement, sourceRootFile)
+                else -> annotatedElement.errorMessage { "Invalid element type, expected a class or constructor" }
             }
-
-            writeBuilder(annotatedClass, sourceRootFile)
         }
 
         return false
     }
 
-    /**
-     * Writes the source code to create a builder for [classToBuild] within the [sourceRoot] directory.
-     */
-    private fun writeBuilder(classToBuild: TypeElement, sourceRoot: File) {
+    /** Invokes [writeBuilder] to create a builder for the given [classElement]. */
+    private fun writeBuilderForClass(classElement: TypeElement, sourceRootFile: File) {
+        writeBuilder(classElement, classElement.fieldsForBuilder(), sourceRootFile)
+    }
+
+    /** Invokes [writeBuilder] to create a builder for the given [constructor]. */
+    private fun writeBuilderForConstructor(constructor: ExecutableElement, sourceRootFile: File) {
+        writeBuilder(constructor.enclosingElement as TypeElement, constructor.parameters, sourceRootFile)
+    }
+
+    /** Writes the source code to create a builder for [classToBuild] within the [sourceRoot] directory. */
+    private fun writeBuilder(classToBuild: TypeElement, fields: List<VariableElement>, sourceRoot: File) {
         val packageName = processingEnv.elementUtils.getPackageOf(classToBuild).toString()
         val builderClassName = "${classToBuild.simpleName}Builder"
 
@@ -83,7 +89,6 @@ class BuilderProcessor : AbstractProcessor() {
 
         val builderSpec = TypeSpec.classBuilder(builderClassName)
         val builderClass = ClassName(packageName, builderClassName)
-        val fields = classToBuild.fieldsForBuilder()
 
         fields.forEach { field ->
             processingEnv.noteMessage { "Adding field: $field" }
@@ -100,9 +105,7 @@ class BuilderProcessor : AbstractProcessor() {
                 .writeTo(sourceRoot)
     }
 
-    /**
-     * Returns all fields in this type that also appear as a constructor parameter.
-     */
+    /** Returns all fields in this type that also appear as a constructor parameter. */
     private fun TypeElement.fieldsForBuilder(): List<VariableElement> {
         val allMembers = processingEnv.elementUtils.getAllMembers(this)
         val fields = fieldsIn(allMembers)
@@ -114,9 +117,7 @@ class BuilderProcessor : AbstractProcessor() {
         return fields.filter { constructorParamNames.contains(it.simpleName.toString()) }
     }
 
-    /**
-     * Creates a 'build()' function that will invoke a constructor for [returnType], passing [fields] as arguments and returning the new instance.
-     */
+    /** Creates a 'build()' function that will invoke a constructor for [returnType], passing [fields] as arguments and returning the new instance. */
     private fun createBuildFunction(fields: List<Element>, returnType: TypeElement): FunSpec {
         val code = StringBuilder("$CHECK_REQUIRED_FIELDS_FUNCTION_NAME()")
         code.appendln().append("return ${returnType.simpleName}(")
@@ -139,13 +140,10 @@ class BuilderProcessor : AbstractProcessor() {
                 .build()
     }
 
-    /**
-     * Creates a function that will invoke [check] to confirm that each required field is populated.
-     */
+    /** Creates a function that will invoke [check] to confirm that each required field is populated. */
     private fun createCheckRequiredFieldsFunction(fields: List<Element>): FunSpec {
         val code = StringBuilder()
-        fields
-                .filterNot { it.isNullable() }
+        fields.filterNot { it.isNullable() }
                 .forEach { field ->
                     code.append("    check(${field.simpleName} != null, {\"${field.simpleName} must not be null\"})").appendln()
                 }
@@ -156,20 +154,16 @@ class BuilderProcessor : AbstractProcessor() {
                 .build()
     }
 
-    /**
-     * Creates a property for the field identified by this element.
-     */
+    /** Creates a property for the field identified by this element. */
     private fun Element.asProperty(): PropertySpec =
             PropertySpec.varBuilder(simpleName.toString(), asKotlinTypeName().asNullable(), KModifier.PRIVATE)
-                    .initializer("${defaultValue()}")
+                    .initializer(defaultValue())
                     .build()
 
-    /**
-     * Returns the correct default value for this element - the value of any [DefaultValue] annotation, or "null".
-     */
+    /** Returns the correct default value for this element - the value of any [DefaultValue] annotation, or "null". */
     private fun Element.defaultValue(): String {
         return if (hasAnnotation(DefaultValue::class.java)) {
-            val default = this.getAnnotation(DefaultValue::class.java).value
+            val default = this.findAnnotation(DefaultValue::class.java).value
             // make sure that strings are wrapped in quotes
             return if (asType().toString() == "java.lang.String" && !default.startsWith("\"")) {
                 "\"$default\""
@@ -181,9 +175,7 @@ class BuilderProcessor : AbstractProcessor() {
         }
     }
 
-    /**
-     * Creates a function that sets the property identified by this element, and returns the [builder].
-     */
+    /** Creates a function that sets the property identified by this element, and returns the [builder]. */
     private fun Element.asSetterFunctionReturning(builder: ClassName): FunSpec {
         val fieldType = asKotlinTypeName()
         val parameterClass = if (isNullable()) {
@@ -206,25 +198,15 @@ class BuilderProcessor : AbstractProcessor() {
         var typeName = asType().asKotlinTypeName()
         if (typeName is ParameterizedTypeName) {
             if (hasAnnotation(NullableType::class.java)
-                    && verify(typeName.typeArguments.isNotEmpty(), "NullableType annotation should not be applied to a property without type arguments!")) {
+                    && assert(typeName.typeArguments.isNotEmpty(), "NullableType annotation should not be applied to a property without type arguments!")) {
                 typeName = typeName.withNullableType()
             }
             if (hasAnnotation(Mutable::class.java)
-                    && verify(MUTABLE_COLLECTIONS.containsKey(typeName.rawType), "Mutable annotation should not be applied to non-mutable collections!")) {
+                    && assert(MUTABLE_COLLECTIONS.containsKey(typeName.rawType), "Mutable annotation should not be applied to non-mutable collections!")) {
                 typeName = typeName.asMutableCollection()
             }
         }
         return typeName
-    }
-
-    /**
-     * Returns the given [fact], logging an error message if it is not true.
-     */
-    private fun Element.verify(fact: Boolean, message: String): Boolean {
-        if (!fact) {
-            this.errorMessage { message }
-        }
-        return fact
     }
 
     /**
@@ -251,12 +233,14 @@ class BuilderProcessor : AbstractProcessor() {
         val mutable = MUTABLE_COLLECTIONS[rawType]!!
                 .parameterizedBy(*this.typeArguments.toTypedArray())
                 .annotated(this.annotations)
-        return if (nullable) { mutable.asNullable() } else { mutable }
+        return if (nullable) {
+            mutable.asNullable()
+        } else {
+            mutable
+        }
     }
 
-    /**
-     * Converts this TypeMirror to a [TypeName], ensuring that java types such as [java.lang.String] are converted to their Kotlin equivalent.
-     */
+    /** Converts this TypeMirror to a [TypeName], ensuring that java types such as [java.lang.String] are converted to their Kotlin equivalent. */
     private fun TypeMirror.asKotlinTypeName(): TypeName {
         return when (this) {
             is PrimitiveType -> processingEnv.typeUtils.boxedClass(this as PrimitiveType?).asKotlinClassName()
@@ -279,9 +263,7 @@ class BuilderProcessor : AbstractProcessor() {
         }
     }
 
-    /**
-     * Converts this element to a [ClassName], ensuring that java types such as [java.lang.String] are converted to their Kotlin equivalent.
-     */
+    /** Converts this element to a [ClassName], ensuring that java types such as [java.lang.String] are converted to their Kotlin equivalent. */
     private fun TypeElement.asKotlinClassName(): ClassName {
         val className = asClassName()
         return try {
@@ -293,8 +275,10 @@ class BuilderProcessor : AbstractProcessor() {
         }
     }
 
+    /** Returns the [TypeElement] represented by this [TypeMirror]. */
     private fun TypeMirror.asTypeElement() = processingEnv.typeUtils.asElement(this) as TypeElement
 
+    /** Returns true as long as this [Element] is not a [PrimitiveType] and does not have the [NotNull] annotation. */
     private fun Element.isNullable(): Boolean {
         if (this.asType() is PrimitiveType) {
             return false
@@ -302,13 +286,68 @@ class BuilderProcessor : AbstractProcessor() {
         return !hasAnnotation(NotNull::class.java)
     }
 
-    private fun Element.hasAnnotation(annotationClass: Class<*>): Boolean {
+    /**
+     * Returns true if this element has the specified [annotation], or if the parent class has a matching constructor parameter with the annotation.
+     * (This is necessary because builder annotations can be applied to both fields and constructor parameters - and constructor parameters take precedence.
+     * Rather than require clients to specify, for instance, `@field:NullableType`, this method also checks for annotations of constructor parameters
+     * when this element is a field).
+     */
+    private fun Element.hasAnnotation(annotation: Class<*>): Boolean {
+        return hasAnnotationDirectly(annotation) || hasAnnotationViaConstructorParameter(annotation)
+    }
+
+    /** Return true if this element has the specified [annotation]. */
+    private fun Element.hasAnnotationDirectly(annotation: Class<*>): Boolean {
         return this.annotationMirrors
                 .map { it.annotationType.toString() }
                 .toSet()
-                .contains(annotationClass.name)
+                .contains(annotation.name)
     }
 
+    /** Return true if there is a constructor parameter with the same name as this element that has the specified [annotation]. */
+    private fun Element.hasAnnotationViaConstructorParameter(annotation: Class<*>): Boolean {
+        val parameterAnnotations = getConstructorParameter()?.annotationMirrors ?: listOf()
+        return parameterAnnotations
+                .map { it.annotationType.toString() }
+                .toSet()
+                .contains(annotation.name)
+    }
+
+    /** Returns the first constructor parameter with the same name as this element, if any such exists. */
+    private fun Element.getConstructorParameter(): VariableElement? {
+        val enclosingElement = this.enclosingElement
+        return if (enclosingElement is TypeElement) {
+            val allMembers = processingEnv.elementUtils.getAllMembers(enclosingElement)
+            constructorsIn(allMembers)
+                    .flatMap { it.parameters }
+                    .firstOrNull { it.simpleName == this.simpleName }
+        } else {
+            null
+        }
+    }
+
+    /**
+     * Returns the given annotation, retrieved from this element directly, or from the corresponding constructor parameter.
+     *
+     * @throws NullPointerException if no such annotation can be found - use [hasAnnotation] before calling this method.
+     */
+    private fun <A : Annotation> Element.findAnnotation(annotation: Class<A>): A {
+        return if (hasAnnotationDirectly(annotation)) {
+            getAnnotation(annotation)
+        } else {
+            getConstructorParameter()!!.getAnnotation(annotation)
+        }
+    }
+
+    /** Returns the given [assertion], logging an error message if it is not true. */
+    private fun Element.assert(assertion: Boolean, message: String): Boolean {
+        if (!assertion) {
+            this.errorMessage { message }
+        }
+        return assertion
+    }
+
+    /** Prints an error message using this element as a position hint. */
     private fun Element.errorMessage(message: () -> String) {
         processingEnv.messager.printMessage(ERROR, message(), this)
     }

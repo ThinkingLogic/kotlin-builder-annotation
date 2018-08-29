@@ -5,7 +5,7 @@ package com.thinkinglogic.builder.annotation
  * {AnnotatedClassName}Builder class to be generated.
  */
 @Retention(AnnotationRetention.SOURCE)
-@Target(AnnotationTarget.CLASS)
+@Target(AnnotationTarget.CLASS, AnnotationTarget.CONSTRUCTOR)
 annotation class Builder
 
 /**
@@ -13,7 +13,7 @@ annotation class Builder
  * As knowledge of the nullability is otherwise lost during annotation processing.
  */
 @Retention(AnnotationRetention.SOURCE)
-@Target(AnnotationTarget.FIELD)
+@Target(AnnotationTarget.FIELD, AnnotationTarget.VALUE_PARAMETER)
 annotation class NullableType
 
 /**
@@ -21,7 +21,7 @@ annotation class NullableType
  * as knowledge of their mutability is otherwise lost during annotation processing.
  */
 @Retention(AnnotationRetention.SOURCE)
-@Target(AnnotationTarget.FIELD)
+@Target(AnnotationTarget.FIELD, AnnotationTarget.VALUE_PARAMETER)
 annotation class Mutable
 
 /**
@@ -29,5 +29,5 @@ annotation class Mutable
  * as knowledge of default values is otherwise lost during annotation processing.
  */
 @Retention(AnnotationRetention.SOURCE)
-@Target(AnnotationTarget.FIELD)
+@Target(AnnotationTarget.FIELD, AnnotationTarget.VALUE_PARAMETER)
 annotation class DefaultValue (val value: String = "")
