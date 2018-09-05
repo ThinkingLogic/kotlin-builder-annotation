@@ -65,10 +65,9 @@ internal class SimpleDataClassTest {
 
         // then
         assert(expected).isNotNull { e ->
+            e is IllegalStateException
             e.message().isNotNull { it.contains("notNullString") }
         }
 
     }
-
-    // TODO create test that confirms a default value for notNullString property is correctly set
 }

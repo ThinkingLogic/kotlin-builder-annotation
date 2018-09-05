@@ -8,7 +8,6 @@ import java.util.*
 @Builder
 data class CollectionsDataClass(
         val listOfStrings: List<String>,
-        // todo val mutableListOfStrings: MutableList<String>,
         val setOfLongs: Set<Long>,
         @NullableType val setOfNullableLongs: Set<Long?>,
         val hashSet: HashSet<Long>,
