@@ -12,6 +12,11 @@ buildscript {
     }
 }
 
+allprojects {
+    group = 'com.thinkinglogic'
+    version = '1.0.0'
+}
+
 
 allprojects {
     apply plugin: "kotlin"
