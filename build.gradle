@@ -14,9 +14,12 @@ buildscript {
 
 allprojects {
     group = 'com.thinkinglogic'
-    version = '1.0.0'
+    version = '1.0.1'
 }
-
+/*
+ * to publish:
+ * gradle clean publish bintrayUpload
+ */
 
 allprojects {
     apply plugin: "kotlin"

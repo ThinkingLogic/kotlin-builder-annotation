@@ -78,6 +78,9 @@ bintray {
             released  = new Date()
             vcsTag = project.version
             attributes = ['kotlin-builder-annotation': 'com.thinkinglogic:com.thinkinglogic.builder:kotlin-builder-annotation']
+            gpg {
+                sign = true
+            }
         }
     }
 }
