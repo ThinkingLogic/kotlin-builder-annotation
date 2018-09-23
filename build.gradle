@@ -1,20 +1,26 @@
-
 buildscript {
     ext.kotlin_version = '1.2.60'
 
     repositories {
         mavenCentral()
+        jcenter()
     }
 
     dependencies {
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
+        classpath 'com.jfrog.bintray.gradle:gradle-bintray-plugin:1.+'
     }
 }
 
+allprojects {
+    group = 'com.thinkinglogic'
+    version = '1.0.0'
+}
 
-allprojects{
+
+allprojects {
     apply plugin: "kotlin"
-    
+
     repositories {
         mavenCentral()
     }
