@@ -15,8 +15,8 @@ apply plugin: 'kotlin-kapt'
 ...
 dependencies {
     ...
-    implementation 'com.thinkinglogic.builder:kotlin-builder-annotation:1.0.3'
-    kapt 'com.thinkinglogic.builder:kotlin-builder-processor:1.0.3'
+    implementation 'com.thinkinglogic.builder:kotlin-builder-annotation:1.1.0'
+    kapt 'com.thinkinglogic.builder:kotlin-builder-processor:1.1.0'
 }
 ```
 ##### Maven
