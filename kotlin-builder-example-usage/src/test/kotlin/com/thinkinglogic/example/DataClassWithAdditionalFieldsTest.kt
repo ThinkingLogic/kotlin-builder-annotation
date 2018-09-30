@@ -1,6 +1,6 @@
 package com.thinkinglogic.example
 
-import assertk.assertions.isEqualTo
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 
 internal class DataClassWithAdditionalFieldsTest {
@@ -8,17 +8,20 @@ internal class DataClassWithAdditionalFieldsTest {
     @Test
     fun `builder should create object with correct properties`() {
         // given
+        val privateString = "barfoo"
         val expected = DataClassWithAdditionalFields(
-                constructorString = "foobar "
+                constructorString = "foobar ",
+                privateString = privateString
         )
 
         // when
         val actual = DataClassWithAdditionalFieldsBuilder()
                 .constructorString(expected.constructorString)
+                .privateString(privateString)
                 .build()
 
         // then
-        assertk.assert(actual).isEqualTo(expected)
+        assertThat(actual).isEqualTo(expected)
     }
 
 }

@@ -1,6 +1,6 @@
 package com.thinkinglogic.example
 
-import assertk.assertions.isEqualTo
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 
 internal class ClassWithConstructorParametersTest {
@@ -24,7 +24,7 @@ internal class ClassWithConstructorParametersTest {
                 .build()
 
         // then
-        assertk.assert(actual).isEqualTo(expected)
+        assertThat(actual).isEqualTo(expected)
     }
 
     @Test
@@ -43,7 +43,7 @@ internal class ClassWithConstructorParametersTest {
                 .build()
 
         // then
-        assertk.assert(actual).isEqualTo(expected)
+        assertThat(actual).isEqualTo(expected)
     }
 
 }

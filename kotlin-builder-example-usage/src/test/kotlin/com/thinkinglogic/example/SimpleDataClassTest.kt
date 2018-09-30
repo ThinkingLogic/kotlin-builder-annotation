@@ -3,6 +3,7 @@ package com.thinkinglogic.example
 import assertk.assert
 import assertk.assertions.*
 import assertk.catch
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import java.time.LocalDate
 
@@ -30,7 +31,7 @@ internal class SimpleDataClassTest {
                 .build()
 
         // then
-        assert(actual).isEqualTo(expected)
+        assertThat(actual).isEqualTo(expected)
     }
 
     @Test
@@ -53,7 +54,7 @@ internal class SimpleDataClassTest {
                 .build()
 
         // then
-        assert(actual).isEqualTo(expected)
+        assertThat(actual).isEqualTo(expected)
     }
 
     @Test
