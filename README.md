@@ -15,8 +15,8 @@ apply plugin: 'kotlin-kapt'
 ...
 dependencies {
     ...
-    implementation 'com.thinkinglogic.builder:kotlin-builder-annotation:1.0.2'
-    kapt 'com.thinkinglogic.builder:kotlin-builder-processor:1.0.2'
+    implementation 'com.thinkinglogic.builder:kotlin-builder-annotation:1.0.3'
+    kapt 'com.thinkinglogic.builder:kotlin-builder-processor:1.0.3'
 }
 ```
 ##### Maven
@@ -26,7 +26,7 @@ dependencies {
     <dependency>
         <groupId>com.thinkinglogic.builder</groupId>
         <artifactId>kotlin-builder-annotation</artifactId>
-        <version>1.0.2</version>
+        <version>1.0.3</version>
     </dependency>
     ...
 </dependencies>
@@ -46,7 +46,7 @@ dependencies {
             <annotationProcessorPath>
                 <groupId>com.thinkinglogic.builder</groupId>
                 <artifactId>kotlin-builder-processor</artifactId>
-                <version>1.0.2</version>
+                <version>1.0.3</version>
             </annotationProcessorPath>
         </annotationProcessorPaths>
     </configuration>
