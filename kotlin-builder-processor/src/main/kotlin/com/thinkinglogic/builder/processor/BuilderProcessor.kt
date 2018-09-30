@@ -17,8 +17,7 @@ import javax.lang.model.type.ArrayType
 import javax.lang.model.type.DeclaredType
 import javax.lang.model.type.PrimitiveType
 import javax.lang.model.type.TypeMirror
-import javax.lang.model.util.ElementFilter.constructorsIn
-import javax.lang.model.util.ElementFilter.fieldsIn
+import javax.lang.model.util.ElementFilter.*
 import javax.tools.Diagnostic.Kind.ERROR
 import javax.tools.Diagnostic.Kind.NOTE
 
@@ -96,6 +95,8 @@ class BuilderProcessor : AbstractProcessor() {
             builderSpec.addFunction(field.asSetterFunctionReturning(builderClass))
         }
 
+        builderSpec.primaryConstructor(FunSpec.constructorBuilder().build())
+        builderSpec.addFunction(createConstructor(fields, classToBuild))
         builderSpec.addFunction(createBuildFunction(fields, classToBuild))
         builderSpec.addFunction(createCheckRequiredFieldsFunction(fields))
 
@@ -115,6 +116,34 @@ class BuilderProcessor : AbstractProcessor() {
                 .map { it.simpleName.toString() }
                 .toSet()
         return fields.filter { constructorParamNames.contains(it.simpleName.toString()) }
+    }
+
+    /** Creates a constructor for [classType] that accepts an instance of the class to build, from which default values are obtained. */
+    private fun createConstructor(fields: List<Element>, classType: TypeElement): FunSpec {
+        val source = "source"
+        val sourceParameter = ParameterSpec.builder(source, classType.asKotlinTypeName()).build()
+        val getterFieldNames = classType.getterFieldNames()
+        val code = StringBuilder()
+        fields.forEach { field ->
+            if (getterFieldNames.contains(field.simpleName.toString())) {
+                code.append("    this.${field.simpleName} = $source.${field.simpleName}")
+                        .appendln()
+            }
+        }
+        return FunSpec.constructorBuilder()
+                .addParameter(sourceParameter)
+                .callThisConstructor()
+                .addCode(code.toString())
+                .build()
+    }
+
+    /** Returns a set of the names of fields with getters (actually the names of getter methods with 'get' removed and decapitalised). */
+    private fun TypeElement.getterFieldNames(): Set<String> {
+        val allMembers = processingEnv.elementUtils.getAllMembers(this)
+        return methodsIn(allMembers)
+                .filter { it.simpleName.startsWith("get") && it.parameters.isEmpty() }
+                .map { it.simpleName.toString().substringAfter("get").decapitalize() }
+                .toSet()
     }
 
     /** Creates a 'build()' function that will invoke a constructor for [returnType], passing [fields] as arguments and returning the new instance. */

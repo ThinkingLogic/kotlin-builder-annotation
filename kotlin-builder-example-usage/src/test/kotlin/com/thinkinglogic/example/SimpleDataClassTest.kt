@@ -1,7 +1,9 @@
 package com.thinkinglogic.example
 
 import assertk.assert
-import assertk.assertions.*
+import assertk.assertions.contains
+import assertk.assertions.isNotNull
+import assertk.assertions.message
 import assertk.catch
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
@@ -55,6 +57,47 @@ internal class SimpleDataClassTest {
 
         // then
         assertThat(actual).isEqualTo(expected)
+    }
+
+    @Test
+    fun `builder should inherit properties from source`() {
+        // given
+        val expected = SimpleDataClass(
+                notNullString = "not null",
+                nullableString = null,
+                notNullLong = 123,
+                nullableLong = 345,
+                date = LocalDate.now()
+        )
+
+        // when
+        val actual = SimpleDataClassBuilder(expected)
+                .build()
+
+        // then
+        assertThat(actual).isEqualTo(expected)
+    }
+
+    @Test
+    fun `builder should replace inherited properties`() {
+        // given
+        val original = SimpleDataClass(
+                notNullString = "not null",
+                nullableString = null,
+                notNullLong = 123,
+                nullableLong = 345,
+                date = LocalDate.now()
+        )
+        val newStringValue = "New value"
+
+        // when
+        val actual = SimpleDataClassBuilder(original)
+                .notNullString(newStringValue)
+                .build()
+
+        // then
+        assertThat(actual).isNotEqualTo(original)
+        assertThat(actual.notNullString).isEqualTo(newStringValue)
     }
 
     @Test

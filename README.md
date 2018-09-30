@@ -26,7 +26,7 @@ dependencies {
     <dependency>
         <groupId>com.thinkinglogic.builder</groupId>
         <artifactId>kotlin-builder-annotation</artifactId>
-        <version>1.0.3</version>
+        <version>1.1.0</version>
     </dependency>
     ...
 </dependencies>
@@ -46,7 +46,7 @@ dependencies {
             <annotationProcessorPath>
                 <groupId>com.thinkinglogic.builder</groupId>
                 <artifactId>kotlin-builder-processor</artifactId>
-                <version>1.0.3</version>
+                <version>1.1.0</version>
             </annotationProcessorPath>
         </annotationProcessorPaths>
     </configuration>
@@ -86,6 +86,9 @@ The builder will check for required fields, so
  would throw an `IllegalStateException` naming the required field ('notNullString' in this case), while  
  `new MyDataClassBuilder().notNullString("Foo").build();`  
  would return a new instance with a null value for 'nullableString'.
+
+To replace Kotlin's `copy()` (and Lombok's `toBuilder()`) method, clients can pass an instance of the annotated class when constructing a builder:
+`new MyDataClassBuilder(myDataClassInstance)` - the builder will be initialised with values from the instance.
 
 #### Default values
 Kotlin doesn't retain information about default values after compilation, so it cannot be accessed during annotation processing. 

@@ -46,4 +46,25 @@ internal class ClassWithConstructorParametersTest {
         assertThat(actual).isEqualTo(expected)
     }
 
+    @Test
+    fun `builder should inherit values from source`() {
+        // given
+        val forename = "Jane"
+        val surname = "Smith"
+        val expected = ClassWithConstructorParameters(
+                forename = forename,
+                surname = surname,
+                otherName = "Jayne"
+        )
+
+        // when
+        val actual = ClassWithConstructorParametersBuilder(expected)
+                .forename(forename)
+                .surname(surname)
+                .build()
+
+        // then
+        assertThat(actual).isEqualTo(expected)
+    }
+
 }
