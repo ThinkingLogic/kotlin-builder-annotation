@@ -26,6 +26,7 @@ internal class CollectionsDataClassTest {
                 .collectionOfDates(expected.collectionOfDates)
                 .listOfStrings(expected.listOfStrings)
                 .setOfLongs(expected.setOfLongs)
+                .setOfNullableLongs(expected.setOfNullableLongs)
                 .treeMap(expected.treeMap)
                 .mapOfStringToNullableDates(expected.mapOfStringToNullableDates)
                 .build()

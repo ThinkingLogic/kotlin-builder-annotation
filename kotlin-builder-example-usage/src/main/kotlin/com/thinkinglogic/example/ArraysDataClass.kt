@@ -14,6 +14,7 @@ data class ArraysDataClass(
         val arrayOfDates: Array<LocalDate>
 
 ) {
+    // Due to the way the JVM uses instance equality for arrays, we should override equals and hashcode
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (javaClass != other?.javaClass) return false

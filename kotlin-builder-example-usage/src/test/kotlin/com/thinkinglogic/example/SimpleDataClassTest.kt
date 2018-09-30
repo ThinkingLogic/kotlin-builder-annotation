@@ -46,6 +46,7 @@ internal class SimpleDataClassTest {
 
         // when
         val actual = SimpleDataClassBuilder()
+                .notNullString(expected.notNullString)
                 .notNullLong(expected.notNullLong)
                 .nullableLong(expected.nullableLong)
                 .date(expected.date)

@@ -22,6 +22,7 @@ internal class ArraysDataClassTest {
                 .arrayOfDates(expected.arrayOfDates)
                 .arrayOfLongs(expected.arrayOfLongs)
                 .arrayOfStrings(expected.arrayOfStrings)
+                .arrayOfNullableStrings(expected.arrayOfNullableStrings)
                 .arrayOfListOfStrings(expected.arrayOfListOfStrings)
                 .build()
 

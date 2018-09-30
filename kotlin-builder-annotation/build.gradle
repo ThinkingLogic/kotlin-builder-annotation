@@ -18,7 +18,8 @@ task javadocJar(type: Jar) {
 publishing {
     publications {
         MyPublication(MavenPublication) {
-            artifactId = 'kotlin-builder-annotation'
+            groupId 'com.thinkinglogic.builder'
+            artifactId 'kotlin-builder-annotation'
             from components.java
             artifact sourcesJar
             artifact javadocJar
@@ -61,6 +62,7 @@ javadoc {
         options.addBooleanOption('html4', true)
     }
 }
+/* see: https://github.com/bintray/gradle-bintray-plugin */
 bintray {
     user = System.getenv('BINTRAY_USER')
     key = System.getenv('BINTRAY_API_KEY')

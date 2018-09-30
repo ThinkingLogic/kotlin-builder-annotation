@@ -15,6 +15,7 @@ public class SimpleDataClassJavaTest {
         // when
         Throwable exception = catchThrowable(() -> builder.notNullString(null));
 
+        // then
         then(exception)
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("notNullString");
