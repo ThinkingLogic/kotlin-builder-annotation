@@ -145,7 +145,7 @@ constructor(
     val fullName = "$forename $surname"
 }
 ```  
-Examples of all of the above may be found in the [kotlin-builder-example-usage](tree/develop/kotlin-builder-example-usage/src/main/kotlin/com/thinkinglogic/example) project.
+Examples of all of the above may be found in the kotlin-builder-example-usage sub-project.
 ## License
 This software is Licenced under the [MIT License](LICENSE.md).
 
