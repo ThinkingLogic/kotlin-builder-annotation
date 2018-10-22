@@ -147,7 +147,31 @@ constructor(
 ) {
     val fullName = "$forename $surname"
 }
-```  
+```
+
+#### builder() and toBuilder() methods
+The `@Builder` annotation processor cannot modify bytecode, so it cannot generate builder() and toBuilder() methods for you,
+but you can add them yourself:
+```kotlin
+import com.thinkinglogic.builder.annotation.Builder
+
+@Builder
+data class MyDataClass(
+        val notNullString: String,
+        val nullableString: String?
+) {
+
+     fun toBuilder(): MyDataClassBuilder = MyDataClassBuilder(this)
+ 
+     companion object {
+         @JvmStatic fun builder() = MyDataClassBuilder()
+     }
+ }
+```
+`MyDataClass.builder()` and `myDataClassObject.toBuilder()` can now be invoked from java,
+enabling a complete drop-in replacement for the Lombok @Builder annotation.
+
+---
 Examples of all of the above may be found in the kotlin-builder-example-usage sub-project.
 ## License
 This software is Licenced under the [MIT License](LICENSE.md).
