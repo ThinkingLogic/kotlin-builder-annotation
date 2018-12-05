@@ -14,6 +14,7 @@ internal class CollectionsDataClassTest {
                 hashSet = HashSet(setOf(1L, 2L)),
                 collectionOfDates = listOf(LocalDate.now()),
                 listOfStrings = listOf("Foo", "bar"),
+                listOfNullableStrings = listOf("Foo", "bar", null, null),
                 setOfLongs = setOf(3L, 4L),
                 setOfNullableLongs = setOf(3L, null),
                 treeMap = TreeMap(),
@@ -25,6 +26,7 @@ internal class CollectionsDataClassTest {
                 .hashSet(expected.hashSet)
                 .collectionOfDates(expected.collectionOfDates)
                 .listOfStrings(expected.listOfStrings)
+                .listOfNullableStrings(expected.listOfNullableStrings)
                 .setOfLongs(expected.setOfLongs)
                 .setOfNullableLongs(expected.setOfNullableLongs)
                 .treeMap(expected.treeMap)
