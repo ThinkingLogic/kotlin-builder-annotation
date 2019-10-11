@@ -29,4 +29,8 @@ constructor(
         result = 31 * result + fullName.hashCode()
         return result
     }
+
+    override fun toString(): String {
+        return "ClassWithConstructorParameters(otherName=$otherName, fullName='$fullName')"
+    }
 }

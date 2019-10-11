@@ -1,6 +1,6 @@
 package com.thinkinglogic.example
 
-import assertk.assertions.isEqualTo
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 
 internal class GenericTypeDataClassTest {
@@ -18,7 +18,7 @@ internal class GenericTypeDataClassTest {
                 .build()
 
         // then
-        assertk.assert(actual).isEqualTo(expected)
+        assertThat(actual).isEqualTo(expected)
     }
 
 }

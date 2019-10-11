@@ -1,6 +1,6 @@
 package com.thinkinglogic.example
 
-import assertk.assertions.isEqualTo
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 
 internal class ClassWithConstructorParametersTest {
@@ -24,7 +24,7 @@ internal class ClassWithConstructorParametersTest {
                 .build()
 
         // then
-        assertk.assert(actual).isEqualTo(expected)
+        assertThat(actual).isEqualTo(expected)
     }
 
     @Test
@@ -43,7 +43,28 @@ internal class ClassWithConstructorParametersTest {
                 .build()
 
         // then
-        assertk.assert(actual).isEqualTo(expected)
+        assertThat(actual).isEqualTo(expected)
+    }
+
+    @Test
+    fun `builder should inherit values from source`() {
+        // given
+        val forename = "Jane"
+        val surname = "Smith"
+        val expected = ClassWithConstructorParameters(
+                forename = forename,
+                surname = surname,
+                otherName = "Jayne"
+        )
+
+        // when
+        val actual = ClassWithConstructorParametersBuilder(expected)
+                .forename(forename)
+                .surname(surname)
+                .build()
+
+        // then
+        assertThat(actual).isEqualTo(expected)
     }
 
 }

@@ -1,6 +1,6 @@
 package com.thinkinglogic.example
 
-import assertk.assertions.isEqualTo
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import java.time.LocalDate
 
@@ -22,11 +22,12 @@ internal class ArraysDataClassTest {
                 .arrayOfDates(expected.arrayOfDates)
                 .arrayOfLongs(expected.arrayOfLongs)
                 .arrayOfStrings(expected.arrayOfStrings)
+                .arrayOfNullableStrings(expected.arrayOfNullableStrings)
                 .arrayOfListOfStrings(expected.arrayOfListOfStrings)
                 .build()
 
         // then
-        assertk.assert(actual).isEqualTo(expected)
+        assertThat(actual).isEqualTo(expected)
     }
 
 }

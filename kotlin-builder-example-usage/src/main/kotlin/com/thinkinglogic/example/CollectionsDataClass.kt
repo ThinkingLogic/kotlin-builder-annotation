@@ -8,11 +8,11 @@ import java.util.*
 @Builder
 data class CollectionsDataClass(
         val listOfStrings: List<String>,
+        @NullableType val listOfNullableStrings: List<String?>,
         val setOfLongs: Set<Long>,
         @NullableType val setOfNullableLongs: Set<Long?>,
         val hashSet: HashSet<Long>,
         val collectionOfDates: Collection<LocalDate>,
         @NullableType val mapOfStringToNullableDates: Map<String, LocalDate?>,
         val treeMap: TreeMap<String, LocalDate>
-
 )

@@ -17,8 +17,7 @@ import javax.lang.model.type.ArrayType
 import javax.lang.model.type.DeclaredType
 import javax.lang.model.type.PrimitiveType
 import javax.lang.model.type.TypeMirror
-import javax.lang.model.util.ElementFilter.constructorsIn
-import javax.lang.model.util.ElementFilter.fieldsIn
+import javax.lang.model.util.ElementFilter.*
 import javax.tools.Diagnostic.Kind.ERROR
 import javax.tools.Diagnostic.Kind.NOTE
 
@@ -96,6 +95,8 @@ class BuilderProcessor : AbstractProcessor() {
             builderSpec.addFunction(field.asSetterFunctionReturning(builderClass))
         }
 
+        builderSpec.primaryConstructor(FunSpec.constructorBuilder().build())
+        builderSpec.addFunction(createConstructor(fields, classToBuild))
         builderSpec.addFunction(createBuildFunction(fields, classToBuild))
         builderSpec.addFunction(createCheckRequiredFieldsFunction(fields))
 
@@ -117,14 +118,42 @@ class BuilderProcessor : AbstractProcessor() {
         return fields.filter { constructorParamNames.contains(it.simpleName.toString()) }
     }
 
+    /** Creates a constructor for [classType] that accepts an instance of the class to build, from which default values are obtained. */
+    private fun createConstructor(fields: List<Element>, classType: TypeElement): FunSpec {
+        val source = "source"
+        val sourceParameter = ParameterSpec.builder(source, classType.asKotlinTypeName()).build()
+        val getterFieldNames = classType.getterFieldNames()
+        val code = StringBuilder()
+        fields.forEach { field ->
+            if (getterFieldNames.contains(field.simpleName.toString())) {
+                code.append("    this.${field.simpleName}·=·$source.${field.simpleName}")
+                        .appendln()
+            }
+        }
+        return FunSpec.constructorBuilder()
+                .addParameter(sourceParameter)
+                .callThisConstructor()
+                .addCode(code.toString())
+                .build()
+    }
+
+    /** Returns a set of the names of fields with getters (actually the names of getter methods with 'get' removed and decapitalised). */
+    private fun TypeElement.getterFieldNames(): Set<String> {
+        val allMembers = processingEnv.elementUtils.getAllMembers(this)
+        return methodsIn(allMembers)
+                .filter { it.simpleName.startsWith("get") && it.parameters.isEmpty() }
+                .map { it.simpleName.toString().substringAfter("get").decapitalize() }
+                .toSet()
+    }
+
     /** Creates a 'build()' function that will invoke a constructor for [returnType], passing [fields] as arguments and returning the new instance. */
     private fun createBuildFunction(fields: List<Element>, returnType: TypeElement): FunSpec {
         val code = StringBuilder("$CHECK_REQUIRED_FIELDS_FUNCTION_NAME()")
-        code.appendln().append("return ${returnType.simpleName}(")
+        code.appendln().append("return·${returnType.simpleName}(")
         val iterator = fields.listIterator()
         while (iterator.hasNext()) {
             val field = iterator.next()
-            code.appendln().append("    ${field.simpleName} = ${field.simpleName}")
+            code.appendln().append("    ${field.simpleName}·=·${field.simpleName}")
             if (!field.isNullable()) {
                 code.append("!!")
             }
@@ -145,7 +174,7 @@ class BuilderProcessor : AbstractProcessor() {
         val code = StringBuilder()
         fields.filterNot { it.isNullable() }
                 .forEach { field ->
-                    code.append("    check(${field.simpleName} != null, {\"${field.simpleName} must not be null\"})").appendln()
+                    code.append("    check(${field.simpleName}·!=·null, {\"${field.simpleName}·must·not·be·null\"})").appendln()
                 }
 
         return FunSpec.builder(CHECK_REQUIRED_FIELDS_FUNCTION_NAME)
@@ -156,7 +185,8 @@ class BuilderProcessor : AbstractProcessor() {
 
     /** Creates a property for the field identified by this element. */
     private fun Element.asProperty(): PropertySpec =
-            PropertySpec.varBuilder(simpleName.toString(), asKotlinTypeName().asNullable(), KModifier.PRIVATE)
+            PropertySpec.builder(simpleName.toString(), asKotlinTypeName().copy(nullable = true), KModifier.PRIVATE)
+                    .mutable()
                     .initializer(defaultValue())
                     .build()
 
@@ -179,14 +209,14 @@ class BuilderProcessor : AbstractProcessor() {
     private fun Element.asSetterFunctionReturning(builder: ClassName): FunSpec {
         val fieldType = asKotlinTypeName()
         val parameterClass = if (isNullable()) {
-            fieldType.asNullable()
+            fieldType.copy(nullable = true)
         } else {
             fieldType
         }
         return FunSpec.builder(simpleName.toString())
                 .addParameter(ParameterSpec.builder("value", parameterClass).build())
                 .returns(builder)
-                .addCode("return apply { $simpleName = value }\n")
+                .addCode("return apply·{ $simpleName·=·value }\n")
                 .build()
     }
 
@@ -216,7 +246,7 @@ class BuilderProcessor : AbstractProcessor() {
      * @throws NoSuchElementException if [this.typeArguments] is empty.
      */
     private fun ParameterizedTypeName.withNullableType(): ParameterizedTypeName {
-        val lastType = this.typeArguments.last().asNullable()
+        val lastType = this.typeArguments.last().copy(nullable = true)
         val typeArguments = ArrayList<TypeName>()
         typeArguments.addAll(this.typeArguments.dropLast(1))
         typeArguments.add(lastType)
@@ -232,9 +262,9 @@ class BuilderProcessor : AbstractProcessor() {
     private fun ParameterizedTypeName.asMutableCollection(): ParameterizedTypeName {
         val mutable = MUTABLE_COLLECTIONS[rawType]!!
                 .parameterizedBy(*this.typeArguments.toTypedArray())
-                .annotated(this.annotations)
-        return if (nullable) {
-            mutable.asNullable()
+                .copy(annotations = this.annotations)
+        return if (isNullable) {
+            mutable.copy(nullable = true)
         } else {
             mutable
         }

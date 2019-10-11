@@ -6,9 +6,55 @@ This project aims to be a minimal viable replacement for the Lombok @Builder plu
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 
 ## Usage
-TODO: gradle and maven
+#### Import `kotlin-builder-annotation` and `kotlin-builder-processor`
+And configure the [Kotlin annotation processor (kapt)](https://kotlinlang.org/docs/reference/kapt.html).
+##### Gradle
+```gradle
+...
+apply plugin: 'kotlin-kapt'
+...
+dependencies {
+    ...
+    implementation 'com.thinkinglogic.builder:kotlin-builder-annotation:1.2.0'
+    kapt 'com.thinkinglogic.builder:kotlin-builder-processor:1.2.0'
+}
+```
+##### Maven
+```maven
+...
+<dependencies>
+    <dependency>
+        <groupId>com.thinkinglogic.builder</groupId>
+        <artifactId>kotlin-builder-annotation</artifactId>
+        <version>1.2.0</version>
+    </dependency>
+    ...
+</dependencies>
+...
+<execution>
+    <id>kapt</id>
+    <goals>
+        <goal>kapt</goal>
+    </goals>
+    <configuration>
+        <sourceDirs>
+            <sourceDir>src/main/kotlin</sourceDir>
+            <sourceDir>src/main/java</sourceDir>
+        </sourceDirs>
+        <annotationProcessorPaths>
+            <!-- Specify your annotation processors here. -->
+            <annotationProcessorPath>
+                <groupId>com.thinkinglogic.builder</groupId>
+                <artifactId>kotlin-builder-processor</artifactId>
+                <version>1.2.0</version>
+            </annotationProcessorPath>
+        </annotationProcessorPaths>
+    </configuration>
+</execution>
 
-#### Annotate your class with the @Builder annotation
+```
+
+#### Annotate your class(es) with the @Builder annotation
 ```kotlin
 import com.thinkinglogic.builder.annotation.Builder
 
@@ -20,8 +66,8 @@ data class MyDataClass(
 ```
 That's it! Client code can now use a builder to construct instances of your class.
 
-Unlike Lombok there's no bytecode manipulation, so we don't have a `MyDataClass.builder()` static method.
-Instead we create a `new MyDataClassBuilder()`:
+Unlike Lombok there's no bytecode manipulation, so we don't expose a `MyDataClass.builder()` static method.
+Instead clients create a `new MyDataClassBuilder()`, for instance:
 
 ```java
 public class MyDataFactory {
@@ -40,6 +86,9 @@ The builder will check for required fields, so
  would throw an `IllegalStateException` naming the required field ('notNullString' in this case), while  
  `new MyDataClassBuilder().notNullString("Foo").build();`  
  would return a new instance with a null value for 'nullableString'.
+
+To replace Kotlin's `copy()` (and Lombok's `toBuilder()`) method, clients can pass an instance of the annotated class when constructing a builder:
+`new MyDataClassBuilder(myDataClassInstance)` - the builder will be initialised with values from the instance.
 
 #### Default values
 Kotlin doesn't retain information about default values after compilation, so it cannot be accessed during annotation processing. 
@@ -72,7 +121,7 @@ data class MyDataClass(
 ```
 
 #### Mutable collections
-Information about the mutability of collections and maps is lost during compilation, so there is a `@Mutable` annotation:
+Information about the mutability of collections and maps is lost during compilation, so there is an `@Mutable` annotation:
 ```kotlin
 import com.thinkinglogic.builder.annotation.Builder
 import com.thinkinglogic.builder.annotation.Mutable
@@ -85,7 +134,7 @@ data class MyDataClass(
 ```
 
 #### Constructor parameters
-The `@Builder` annotation should be placed on a constructor instead of the class if you have constructor-only parameters:
+The `@Builder` annotation may be placed on a constructor instead of the class - useful if you have constructor-only parameters:
 ```kotlin
 import com.thinkinglogic.builder.annotation.Builder
 
@@ -98,8 +147,32 @@ constructor(
 ) {
     val fullName = "$forename $surname"
 }
-```  
+```
 
+#### builder() and toBuilder() methods
+The `@Builder` annotation processor cannot modify bytecode, so it cannot generate builder() and toBuilder() methods for you,
+but you can add them yourself:
+```kotlin
+import com.thinkinglogic.builder.annotation.Builder
+
+@Builder
+data class MyDataClass(
+        val notNullString: String,
+        val nullableString: String?
+) {
+
+     fun toBuilder(): MyDataClassBuilder = MyDataClassBuilder(this)
+ 
+     companion object {
+         @JvmStatic fun builder() = MyDataClassBuilder()
+     }
+ }
+```
+`MyDataClass.builder()` and `myDataClassObject.toBuilder()` can now be invoked from java,
+enabling a complete drop-in replacement for the Lombok @Builder annotation.
+
+---
+Examples of all of the above may be found in the kotlin-builder-example-usage sub-project.
 ## License
 This software is Licenced under the [MIT License](LICENSE.md).
 

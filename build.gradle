@@ -1,5 +1,7 @@
 buildscript {
-    ext.kotlin_version = '1.2.60'
+    ext.kotlin_version = '1.3.50'
+    ext.kotlintest_version = '3.3.2'
+    ext.junit_jupiter_version = '5.3.1'
 
     repositories {
         mavenCentral()
@@ -12,17 +14,19 @@ buildscript {
     }
 }
 
-allprojects {
-    group = 'com.thinkinglogic'
-    version = '1.0.0'
-}
+/*
+ * to publish:
+ * gradle clean publish bintrayUpload
+ */
 
-
 allprojects {
+    group = 'com.thinkinglogic.builder'
+    version = '1.2.0'
     apply plugin: "kotlin"
 
     repositories {
         mavenCentral()
+        jcenter()
     }
 
     compileKotlin {
@@ -41,6 +45,13 @@ allprojects {
 
     dependencies {
         compile "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlin_version"
+        testCompile "org.junit.jupiter:junit-jupiter-engine:$junit_jupiter_version"
+        testCompile "org.junit.jupiter:junit-jupiter-api:$junit_jupiter_version"
+        testCompile "io.kotlintest:kotlintest-runner-junit5:$kotlintest_version"
+        testCompile "io.kotlintest:kotlintest-core:$kotlintest_version"
     }
 
+    test {
+        useJUnitPlatform()
+    }
 }
