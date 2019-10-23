@@ -11,6 +11,7 @@ data class SimpleDataClass(
         val notNullLong: Long,
         val nullableLong: Long?,
         val date: LocalDate,
+        val value: String,
         @DefaultValue("withDefaultValue") val stringWithDefault: String = "withDefaultValue",
         @DefaultValue("LocalDate.MIN") val defaultDate: LocalDate = LocalDate.MIN
 ) {

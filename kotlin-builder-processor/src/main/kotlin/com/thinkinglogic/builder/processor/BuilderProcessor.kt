@@ -216,7 +216,7 @@ class BuilderProcessor : AbstractProcessor() {
         return FunSpec.builder(simpleName.toString())
                 .addParameter(ParameterSpec.builder("value", parameterClass).build())
                 .returns(builder)
-                .addCode("return apply·{ $simpleName·=·value }\n")
+                .addCode("return apply·{ this.$simpleName·=·value }\n")
                 .build()
     }
 
