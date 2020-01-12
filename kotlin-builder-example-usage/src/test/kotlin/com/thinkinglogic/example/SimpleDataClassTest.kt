@@ -19,7 +19,8 @@ internal class SimpleDataClassTest {
                 nullableString = null,
                 notNullLong = 123,
                 nullableLong = 345,
-                date = LocalDate.now()
+                date = LocalDate.now(),
+                value = "valueProperty"
         )
 
         // when
@@ -28,6 +29,7 @@ internal class SimpleDataClassTest {
                 .notNullLong(expected.notNullLong)
                 .nullableLong(expected.nullableLong)
                 .date(expected.date)
+                .value(expected.value)
                 .stringWithDefault(expected.stringWithDefault)
                 .defaultDate(expected.defaultDate)
                 .build()
@@ -44,7 +46,8 @@ internal class SimpleDataClassTest {
                 nullableString = null,
                 notNullLong = 123,
                 nullableLong = 345,
-                date = LocalDate.now()
+                date = LocalDate.now(),
+                value = "valueProperty"
         )
 
         // when
@@ -53,6 +56,7 @@ internal class SimpleDataClassTest {
                 .notNullLong(expected.notNullLong)
                 .nullableLong(expected.nullableLong)
                 .date(expected.date)
+                .value(expected.value)
                 .build()
 
         // then
@@ -67,7 +71,8 @@ internal class SimpleDataClassTest {
                 nullableString = null,
                 notNullLong = 123,
                 nullableLong = 345,
-                date = LocalDate.now()
+                date = LocalDate.now(),
+                value = "valueProperty"
         )
 
         // when
@@ -86,7 +91,8 @@ internal class SimpleDataClassTest {
                 nullableString = null,
                 notNullLong = 123,
                 nullableLong = 345,
-                date = LocalDate.now()
+                date = LocalDate.now(),
+                value = "valueProperty"
         )
         val newStringValue = "New value"
 

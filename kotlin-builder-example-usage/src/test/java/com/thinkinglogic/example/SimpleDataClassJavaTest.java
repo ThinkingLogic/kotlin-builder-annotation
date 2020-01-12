@@ -32,6 +32,7 @@ public class SimpleDataClassJavaTest {
                 .notNullString("Foo")
                 .nullableString("Bar")
                 .notNullLong(123L)
+                .value("valueProperty")
                 .build();
 
         // when
