@@ -82,7 +82,8 @@ class BuilderProcessor : AbstractProcessor() {
     /** Writes the source code to create a builder for [classToBuild] within the [sourceRoot] directory. */
     private fun writeBuilder(classToBuild: TypeElement, fields: List<VariableElement>, sourceRoot: File) {
         val packageName = processingEnv.elementUtils.getPackageOf(classToBuild).toString()
-        val builderClassName = "${classToBuild.simpleName}Builder"
+
+        val builderClassName = "${buildClassName(classToBuild, "_")}Builder"
 
         processingEnv.noteMessage { "Writing $packageName.$builderClassName" }
 
@@ -104,6 +105,16 @@ class BuilderProcessor : AbstractProcessor() {
                 .addType(builderSpec.build())
                 .build()
                 .writeTo(sourceRoot)
+    }
+
+    private fun buildClassName(classToBuild: TypeElement, separator: String): String {
+        var className = classToBuild.simpleName.toString()
+        var clazz: Element = classToBuild.enclosingElement
+        while (clazz is TypeElement) {
+            className = clazz.simpleName.toString() + separator + className
+            clazz = clazz.enclosingElement
+        }
+        return className
     }
 
     /** Returns all fields in this type that also appear as a constructor parameter. */
@@ -149,7 +160,7 @@ class BuilderProcessor : AbstractProcessor() {
     /** Creates a 'build()' function that will invoke a constructor for [returnType], passing [fields] as arguments and returning the new instance. */
     private fun createBuildFunction(fields: List<Element>, returnType: TypeElement): FunSpec {
         val code = StringBuilder("$CHECK_REQUIRED_FIELDS_FUNCTION_NAME()")
-        code.appendln().append("return·${returnType.simpleName}(")
+        code.appendln().append("return·${buildClassName(returnType, ".")}(")
         val iterator = fields.listIterator()
         while (iterator.hasNext()) {
             val field = iterator.next()
