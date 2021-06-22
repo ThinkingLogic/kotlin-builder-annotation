@@ -8,5 +8,4 @@ data class DataClassWithAdditionalFields(
         private val privateString: String
 ) {
     val nonConstructorString = constructorString + "foo"
-
 }
