@@ -1,9 +1,7 @@
 package com.thinkinglogic.example
 
-import assertk.assertions.contains
-import assertk.assertions.isNotNull
-import assertk.assertions.message
-import assertk.catch
+import assertk.assertions.isFailure
+import assertk.assertions.messageContains
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 
@@ -36,14 +34,10 @@ internal class DataClassWithAdditionalFieldsTest {
                 privateString = "barfoo"
         )
 
-        // when
-        var expected = catch { DataClassWithAdditionalFieldsBuilder(source).build() }
-
         // then
-        assertk.assert(expected).isNotNull { e ->
-            e is IllegalStateException
-            e.message().isNotNull { it.contains("privateString") }
-        }
+        assertk.assertThat { DataClassWithAdditionalFieldsBuilder(source).build() }
+          .isFailure()
+          .messageContains("privateString")
     }
 
 }

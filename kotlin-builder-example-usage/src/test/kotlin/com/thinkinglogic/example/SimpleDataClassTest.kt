@@ -1,10 +1,7 @@
 package com.thinkinglogic.example
 
-import assertk.assert
-import assertk.assertions.contains
-import assertk.assertions.isNotNull
-import assertk.assertions.message
-import assertk.catch
+import assertk.assertions.isFailure
+import assertk.assertions.messageContains
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import java.time.LocalDate
@@ -111,14 +108,9 @@ internal class SimpleDataClassTest {
         // given
         val builder = SimpleDataClassBuilder()
 
-        // when
-        var expected = catch { builder.build() }
-
         // then
-        assert(expected).isNotNull { e ->
-            e is IllegalStateException
-            e.message().isNotNull { it.contains("notNullString") }
-        }
-
+        assertk.assertThat { builder.build() }
+          .isFailure()
+          .messageContains("notNullString")
     }
 }

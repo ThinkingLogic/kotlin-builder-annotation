@@ -20,7 +20,7 @@ public class SimpleDataClassJavaTest {
 
         // then
         then(exception)
-                .isInstanceOf(IllegalArgumentException.class)
+                .isInstanceOf(NullPointerException.class)
                 .hasMessageContaining("notNullString");
     }
 
