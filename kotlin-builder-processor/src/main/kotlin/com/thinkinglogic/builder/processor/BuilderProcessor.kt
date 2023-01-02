@@ -26,7 +26,7 @@ import javax.tools.Diagnostic.Kind.NOTE
  * Constructs a Builder for the annotated class.
  */
 @SupportedAnnotationTypes("com.thinkinglogic.builder.annotation.Builder")
-@SupportedSourceVersion(SourceVersion.RELEASE_8)
+@SupportedSourceVersion(SourceVersion.RELEASE_11)
 @SupportedOptions(BuilderProcessor.KAPT_KOTLIN_GENERATED_OPTION_NAME)
 class BuilderProcessor : AbstractProcessor() {
 
