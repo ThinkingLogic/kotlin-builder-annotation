@@ -44,11 +44,11 @@ allprojects {
     }
 
     dependencies {
-        compile "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlin_version"
-        testCompile "org.junit.jupiter:junit-jupiter-engine:$junit_jupiter_version"
-        testCompile "org.junit.jupiter:junit-jupiter-api:$junit_jupiter_version"
-        testCompile "io.kotlintest:kotlintest-runner-junit5:$kotlintest_version"
-        testCompile "io.kotlintest:kotlintest-core:$kotlintest_version"
+        implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlin_version"
+        testImplementation "org.junit.jupiter:junit-jupiter-engine:$junit_jupiter_version"
+        testImplementation "org.junit.jupiter:junit-jupiter-api:$junit_jupiter_version"
+        testImplementation "io.kotlintest:kotlintest-runner-junit5:$kotlintest_version"
+        testImplementation "io.kotlintest:kotlintest-core:$kotlintest_version"
     }
 
     test {
