@@ -1,6 +1,6 @@
-apply plugin: 'kotlin-kapt'
-apply plugin: 'com.jfrog.bintray'
-apply plugin: 'maven-publish'
+plugins {
+    id 'kotlin-kapt'
+}
 
 dependencies {
     implementation project(':kotlin-builder-annotation')
@@ -24,7 +24,7 @@ task javadocJar(type: Jar) {
 
 publishing {
     publications {
-        MyPublication(MavenPublication) {
+        BuilderProcessor(MavenPublication) {
             groupId 'com.thinkinglogic.builder'
             artifactId 'kotlin-builder-processor'
             from components.java
@@ -64,32 +64,15 @@ publishing {
     }
 }
 
+signing {
+    def signingKey = System.getenv('SONATYPE_GPG_SECRET_KEY')
+    def signingPassword = System.getenv('SONATYPE_GPG_PASSPHRASE')
+    useInMemoryPgpKeys(signingKey, signingPassword)
+    sign publishing.publications.BuilderProcessor
+}
+
 javadoc {
     if(JavaVersion.current().isJava9Compatible()) {
         options.addBooleanOption('html4', true)
-    }
-}
-/* see: https://github.com/bintray/gradle-bintray-plugin */
-bintray {
-    user = System.getenv('BINTRAY_USER')
-    key = System.getenv('BINTRAY_API_KEY')
-    publications = ['MyPublication']
-    pkg {
-        repo = 'maven'
-        name = 'kotlin-builder-processor'
-        userOrg = 'thinkinglogic'
-        licenses = ['MIT']
-        labels = ['kotlin', 'builder', 'annotation', 'processor']
-        vcsUrl = 'https://github.com/ThinkingLogic/kotlin-builder-annotation.git'
-        version {
-            name = project.version
-            desc = '@Builder annotation processor for Kotlin'
-            released  = new Date()
-            vcsTag = project.version
-            attributes = ['kotlin-builder-processor': 'com.thinkinglogic:com.thinkinglogic.builder:kotlin-builder-processor']
-            gpg {
-                sign = true
-            }
-        }
     }
 }
