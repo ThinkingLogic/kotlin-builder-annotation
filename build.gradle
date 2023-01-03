@@ -2,6 +2,7 @@ buildscript {
     ext.kotlin_version = '1.3.50'
     ext.kotlintest_version = '3.3.2'
     ext.junit_jupiter_version = '5.3.1'
+    ext.nexus_plugin_version = '1.1.0'
 
     repositories {
         mavenCentral()
@@ -10,18 +11,37 @@ buildscript {
 
     dependencies {
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
-        classpath 'com.jfrog.bintray.gradle:gradle-bintray-plugin:1.+'
     }
 }
 
-/*
- * to publish:
- * gradle clean publish bintrayUpload
- */
+plugins {
+    id 'signing'
+    id "org.jetbrains.dokka" version "1.4.20"
+    id 'maven-publish'
+    id 'io.github.gradle-nexus.publish-plugin' version "$nexus_plugin_version"
+}
+/**
+ * to publish: (just run `./gradlew clean publish closeAndReleaseStagingRepository` if you're feeling confident)
+ * 1 `./gradlew clean publish`
+ * 2 visit https://oss.sonatype.org/#nexus-search;quick~com.thinkinglogic.builder to confirm it looks correct
+ * 3 visit https://oss.sonatype.org/#stagingRepositories and close then release the staging repository
+ *
+ * Note that this requires your pgp key to be publically identifiable, e.g. at https://keys.openpgp.org/
+ * see: https://github.com/gradle-nexus/publish-plugin,  https://h4pehl.medium.com/publish-your-gradle-artifacts-to-maven-central-f74a0af085b1
+ **/
+nexusPublishing {
+    repositories {
+        sonatype {
+            username = System.getenv('SONATYPE_USER')
+            password = System.getenv('SONATYPE_PASSWORD')
+        }
+    }
+}
+
 
 allprojects {
     group = 'com.thinkinglogic.builder'
-    version = '1.2.1'
+    version = '1.2.3'
     apply plugin: "kotlin"
 
     repositories {
@@ -31,24 +51,24 @@ allprojects {
 
     compileKotlin {
         kotlinOptions {
-            jvmTarget = "1.8"
+            jvmTarget = "11"
             javaParameters = true
         }
     }
 
     compileTestKotlin {
         kotlinOptions {
-            jvmTarget = "1.8"
+            jvmTarget = "11"
             javaParameters = true
         }
     }
 
     dependencies {
-        compile "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlin_version"
-        testCompile "org.junit.jupiter:junit-jupiter-engine:$junit_jupiter_version"
-        testCompile "org.junit.jupiter:junit-jupiter-api:$junit_jupiter_version"
-        testCompile "io.kotlintest:kotlintest-runner-junit5:$kotlintest_version"
-        testCompile "io.kotlintest:kotlintest-core:$kotlintest_version"
+        implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlin_version"
+        testImplementation "org.junit.jupiter:junit-jupiter-engine:$junit_jupiter_version"
+        testImplementation "org.junit.jupiter:junit-jupiter-api:$junit_jupiter_version"
+        testImplementation "io.kotlintest:kotlintest-runner-junit5:$kotlintest_version"
+        testImplementation "io.kotlintest:kotlintest-core:$kotlintest_version"
     }
 
     test {

@@ -1,5 +1,5 @@
 # kotlin-builder-annotation
-A builder annotation for Kotlin interoperability with Java.
+A builder annotation for Kotlin interoperability with Java - to give Java clients a clean way to construct Kotlin objects.
 This project aims to be a minimal viable replacement for the Lombok @Builder plugin for Kotlin code.
 
 [![Build Status](https://travis-ci.com/ThinkingLogic/kotlin-builder-annotation.svg?branch=master)](https://travis-ci.com/ThinkingLogic/kotlin-builder-annotation)
