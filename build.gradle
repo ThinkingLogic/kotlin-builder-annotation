@@ -21,10 +21,14 @@ plugins {
     id 'io.github.gradle-nexus.publish-plugin' version "$nexus_plugin_version"
 }
 /**
- * to publish:
- *  ./gradlew clean publish
- */
-/* see: https://github.com/gradle-nexus/publish-plugin,  https://h4pehl.medium.com/publish-your-gradle-artifacts-to-maven-central-f74a0af085b1 */
+ * to publish: (just run `./gradlew clean publish closeAndReleaseStagingRepository` if you're feeling confident)
+ * 1 `./gradlew clean publish`
+ * 2 visit https://oss.sonatype.org/#nexus-search;quick~com.thinkinglogic.builder to confirm it looks correct
+ * 3 visit https://oss.sonatype.org/#stagingRepositories and close then release the staging repository
+ *
+ * Note that this requires your pgp key to be publically identifiable, e.g. at https://keys.openpgp.org/
+ * see: https://github.com/gradle-nexus/publish-plugin,  https://h4pehl.medium.com/publish-your-gradle-artifacts-to-maven-central-f74a0af085b1
+ **/
 nexusPublishing {
     repositories {
         sonatype {
@@ -37,7 +41,7 @@ nexusPublishing {
 
 allprojects {
     group = 'com.thinkinglogic.builder'
-    version = '1.2.1'
+    version = '1.2.3'
     apply plugin: "kotlin"
 
     repositories {
