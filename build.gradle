@@ -41,17 +41,9 @@ allprojects {
         mavenCentral()
     }
 
-    compileKotlin {
-        kotlinOptions {
-            jvmTarget = "11"
-            javaParameters = true
-        }
-    }
-
-    compileTestKotlin {
-        kotlinOptions {
-            jvmTarget = "11"
-            javaParameters = true
+    kotlin {
+        jvmToolchain {
+            languageVersion.set(JavaLanguageVersion.of("11"))
         }
     }
 
