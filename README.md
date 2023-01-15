@@ -11,7 +11,9 @@ And configure the [Kotlin annotation processor (kapt)](https://kotlinlang.org/do
 ##### Gradle
 ```gradle
 ...
-apply plugin: 'kotlin-kapt'
+plugins {
+    id "org.jetbrains.kotlin.kapt"
+}
 ...
 dependencies {
     ...
@@ -81,7 +83,7 @@ public class MyDataFactory {
 ```
 The builder will check for required fields, so  
  `new MyDataClassBuilder().notNullString(null);`  
- would throw an `IllegalArgumentException` and  
+ would throw an `NullPointerException` and  
  `new MyDataClassBuilder().nullableString("Bar").build();`  
  would throw an `IllegalStateException` naming the required field ('notNullString' in this case), while  
  `new MyDataClassBuilder().notNullString("Foo").build();`  
