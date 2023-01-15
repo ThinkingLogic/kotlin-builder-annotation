@@ -3,10 +3,10 @@ plugins {
 }
 
 dependencies {
-    implementation project(':kotlin-builder-annotation')
+    implementation project(":kotlin-builder-annotation")
     implementation "org.jetbrains.kotlin:kotlin-reflect"
 
-    kapt project(':kotlin-builder-processor')
+    kapt project(":kotlin-builder-processor")
     
     testImplementation "org.assertj:assertj-core:3.10.0"
     testImplementation "com.willowtreeapps.assertk:assertk:0.10"
