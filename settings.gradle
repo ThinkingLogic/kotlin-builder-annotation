@@ -1,2 +1,2 @@
-rootProject.name = 'kotlin-builder-annotation-parent'
-include ':kotlin-builder-annotation', ':kotlin-builder-processor', ':kotlin-builder-example-usage'
+rootProject.name = "kotlin-builder-annotation-parent"
+include ":kotlin-builder-annotation", ":kotlin-builder-processor", ":kotlin-builder-example-usage"
