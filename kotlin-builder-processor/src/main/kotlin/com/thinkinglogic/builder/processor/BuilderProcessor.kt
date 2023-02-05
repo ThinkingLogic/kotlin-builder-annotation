@@ -26,7 +26,7 @@ import javax.tools.Diagnostic.Kind.NOTE
  * Constructs a Builder for the annotated class.
  */
 @SupportedAnnotationTypes("com.thinkinglogic.builder.annotation.Builder")
-@SupportedSourceVersion(SourceVersion.RELEASE_11)
+@SupportedSourceVersion(SourceVersion.RELEASE_8)
 @SupportedOptions(BuilderProcessor.KAPT_KOTLIN_GENERATED_OPTION_NAME)
 class BuilderProcessor : AbstractProcessor() {
 
@@ -82,7 +82,8 @@ class BuilderProcessor : AbstractProcessor() {
     /** Writes the source code to create a builder for [classToBuild] within the [sourceRoot] directory. */
     private fun writeBuilder(classToBuild: TypeElement, fields: List<VariableElement>, sourceRoot: File) {
         val packageName = processingEnv.elementUtils.getPackageOf(classToBuild).toString()
-        val builderClassName = "${classToBuild.simpleName}Builder"
+
+        val builderClassName = "${buildClassName(classToBuild, "_")}Builder"
 
         processingEnv.noteMessage { "Writing $packageName.$builderClassName" }
 
@@ -106,6 +107,16 @@ class BuilderProcessor : AbstractProcessor() {
                 .writeTo(sourceRoot)
     }
 
+    private fun buildClassName(classToBuild: TypeElement, separator: String): String {
+        var className = classToBuild.simpleName.toString()
+        var clazz: Element = classToBuild.enclosingElement
+        while (clazz is TypeElement) {
+            className = clazz.simpleName.toString() + separator + className
+            clazz = clazz.enclosingElement
+        }
+        return className
+    }
+
     /** Returns all fields in this type that also appear as a constructor parameter. */
     private fun TypeElement.fieldsForBuilder(): List<VariableElement> {
         val allMembers = processingEnv.elementUtils.getAllMembers(this)
@@ -127,7 +138,7 @@ class BuilderProcessor : AbstractProcessor() {
         fields.forEach { field ->
             if (getterFieldNames.contains(field.simpleName.toString())) {
                 code.append("    this.${field.simpleName}·=·$source.${field.simpleName}")
-                    .appendLine()
+                        .appendln()
             }
         }
         return FunSpec.constructorBuilder()
@@ -142,19 +153,18 @@ class BuilderProcessor : AbstractProcessor() {
         val allMembers = processingEnv.elementUtils.getAllMembers(this)
         return methodsIn(allMembers)
                 .filter { it.simpleName.startsWith("get") && it.parameters.isEmpty() }
-                .map { it.simpleName.toString().substringAfter("get")
-                    .replaceFirstChar { ch -> ch.lowercase(Locale.getDefault()) } }
+                .map { it.simpleName.toString().substringAfter("get").decapitalize() }
                 .toSet()
     }
 
     /** Creates a 'build()' function that will invoke a constructor for [returnType], passing [fields] as arguments and returning the new instance. */
     private fun createBuildFunction(fields: List<Element>, returnType: TypeElement): FunSpec {
         val code = StringBuilder("$CHECK_REQUIRED_FIELDS_FUNCTION_NAME()")
-        code.appendLine().append("return·${returnType.simpleName}(")
+        code.appendln().append("return·${buildClassName(returnType, ".")}(")
         val iterator = fields.listIterator()
         while (iterator.hasNext()) {
             val field = iterator.next()
-            code.appendLine().append("    ${field.simpleName}·=·${field.simpleName}")
+            code.appendln().append("    ${field.simpleName}·=·${field.simpleName}")
             if (!field.isNullable()) {
                 code.append("!!")
             }
@@ -162,7 +172,7 @@ class BuilderProcessor : AbstractProcessor() {
                 code.append(",")
             }
         }
-        code.appendLine().append(")").appendLine()
+        code.appendln().append(")").appendln()
 
         return FunSpec.builder("build")
                 .returns(returnType.asClassName())
@@ -175,7 +185,7 @@ class BuilderProcessor : AbstractProcessor() {
         val code = StringBuilder()
         fields.filterNot { it.isNullable() }
                 .forEach { field ->
-                    code.append("    check(${field.simpleName}·!=·null, {\"${field.simpleName}·must·not·be·null\"})").appendLine()
+                    code.append("    check(${field.simpleName}·!=·null, {\"${field.simpleName}·must·not·be·null\"})").appendln()
                 }
 
         return FunSpec.builder(CHECK_REQUIRED_FIELDS_FUNCTION_NAME)
