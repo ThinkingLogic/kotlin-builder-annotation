@@ -4,7 +4,7 @@ import com.thinkinglogic.builder.annotation.Builder
 import com.thinkinglogic.builder.annotation.DefaultValue
 import java.time.LocalDate
 
-@Builder
+@Builder(setterPrefix = "with")
 data class SimpleDataClass(
         val notNullString: String,
         val nullableString: String?,

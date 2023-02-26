@@ -1,14 +1,24 @@
 plugins {
-    id "org.jetbrains.kotlin.kapt"
+    id 'com.google.devtools.ksp' version '1.8.0-1.0.8'
 }
 
 dependencies {
     implementation project(":kotlin-builder-annotation")
     implementation "org.jetbrains.kotlin:kotlin-reflect"
 
-    kapt project(":kotlin-builder-processor")
+    ksp project(":kotlin-builder-processor")
     
     testImplementation "org.assertj:assertj-core:3.10.0"
     testImplementation "com.willowtreeapps.assertk:assertk:0.10"
 
+}
+
+ksp {
+    arg("builder.debug", "true")
+}
+
+sourceSets {
+    main {
+        kotlin.srcDirs += "build/generated/ksp/main/kotlin"
+    }
 }

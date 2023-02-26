@@ -25,13 +25,13 @@ internal class SimpleDataClassTest {
 
         // when
         val actual = SimpleDataClassBuilder()
-                .notNullString(expected.notNullString)
-                .notNullLong(expected.notNullLong)
-                .nullableLong(expected.nullableLong)
-                .date(expected.date)
-                .value(expected.value)
-                .stringWithDefault(expected.stringWithDefault)
-                .defaultDate(expected.defaultDate)
+                .withNotNullString(expected.notNullString)
+                .withNotNullLong(expected.notNullLong)
+                .withNullableLong(expected.nullableLong)
+                .withDate(expected.date)
+                .withValue(expected.value)
+                .withStringWithDefault(expected.stringWithDefault)
+                .withDefaultDate(expected.defaultDate)
                 .build()
 
         // then
@@ -52,11 +52,11 @@ internal class SimpleDataClassTest {
 
         // when
         val actual = SimpleDataClassBuilder()
-                .notNullString(expected.notNullString)
-                .notNullLong(expected.notNullLong)
-                .nullableLong(expected.nullableLong)
-                .date(expected.date)
-                .value(expected.value)
+                .withNotNullString(expected.notNullString)
+                .withNotNullLong(expected.notNullLong)
+                .withNullableLong(expected.nullableLong)
+                .withDate(expected.date)
+                .withValue(expected.value)
                 .build()
 
         // then
@@ -98,7 +98,7 @@ internal class SimpleDataClassTest {
 
         // when
         val actual = SimpleDataClassBuilder(original)
-                .notNullString(newStringValue)
+                .withNotNullString(newStringValue)
                 .build()
 
         // then
@@ -112,7 +112,7 @@ internal class SimpleDataClassTest {
         val builder = SimpleDataClassBuilder()
 
         // when
-        var expected = catch { builder.build() }
+        val expected = catch { builder.build() }
 
         // then
         assert(expected).isNotNull { e ->

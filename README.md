@@ -7,18 +7,24 @@ This project aims to be a minimal viable replacement for the Lombok @Builder plu
 
 ## Usage
 #### Import `kotlin-builder-annotation` and `kotlin-builder-processor`
-And configure the [Kotlin annotation processor (kapt)](https://kotlinlang.org/docs/reference/kapt.html).
+And configure the [Kotlin Symbol Processor (ksp)](https://kotlinlang.org/docs/reference/kapt.html):
 ##### Gradle
 ```gradle
 ...
 plugins {
-    id "org.jetbrains.kotlin.kapt"
+    id 'com.google.devtools.ksp' version '1.8.0-1.0.8'
 }
-...
+// ...
 dependencies {
     ...
-    implementation 'com.thinkinglogic.builder:kotlin-builder-annotation:1.2.1'
-    kapt 'com.thinkinglogic.builder:kotlin-builder-processor:1.2.1'
+    implementation 'com.thinkinglogic.builder:kotlin-builder-annotation:2.0.0'
+    ksp 'com.thinkinglogic.builder:kotlin-builder-processor:2.0.0'
+}
+// ...
+sourceSets {
+    main {
+        kotlin.srcDirs += "build/generated/ksp/main/kotlin"
+    }
 }
 ```
 ##### Maven
@@ -92,6 +98,28 @@ The builder will check for required fields, so
 To replace Kotlin's `copy()` (and Lombok's `toBuilder()`) method, clients can pass an instance of the annotated class when constructing a builder:
 `new MyDataClassBuilder(myDataClassInstance)` - the builder will be initialised with values from the instance.
 
+#### builder() and toBuilder() methods
+The `@Builder` annotation processor cannot modify bytecode, so it cannot generate builder() and toBuilder() methods for you,
+but you can add them yourself:
+```kotlin
+import com.thinkinglogic.builder.annotation.Builder
+
+@Builder
+data class MyDataClass(
+        val notNullString: String,
+        val nullableString: String?
+) {
+
+     fun toBuilder(): MyDataClassBuilder = MyDataClassBuilder(this)
+ 
+     companion object {
+         @JvmStatic fun builder() = MyDataClassBuilder()
+     }
+ }
+```
+`MyDataClass.builder()` and `myDataClassObject.toBuilder()` can now be invoked from java,
+enabling a complete drop-in replacement for the Lombok @Builder annotation.
+
 #### Default values
 Kotlin doesn't retain information about default values after compilation, so it cannot be accessed during annotation processing. 
 Instead we must use the `@DefaultValue` annotation to tell the builder about it: 
@@ -151,27 +179,13 @@ constructor(
 }
 ```
 
-#### builder() and toBuilder() methods
-The `@Builder` annotation processor cannot modify bytecode, so it cannot generate builder() and toBuilder() methods for you,
-but you can add them yourself:
-```kotlin
-import com.thinkinglogic.builder.annotation.Builder
+## What's not supported
 
-@Builder
-data class MyDataClass(
-        val notNullString: String,
-        val nullableString: String?
-) {
-
-     fun toBuilder(): MyDataClassBuilder = MyDataClassBuilder(this)
- 
-     companion object {
-         @JvmStatic fun builder() = MyDataClassBuilder()
-     }
- }
-```
-`MyDataClass.builder()` and `myDataClassObject.toBuilder()` can now be invoked from java,
-enabling a complete drop-in replacement for the Lombok @Builder annotation.
+* Default values using private methods.
+* Default values that refer to other parameters?
+* Default values with multi-line comments.
+* Multiple constructors annotated with `@Builder`. You'll get a builder based on the constructor with the most parameters.
+* Star imports (are partially supported). If you have a default value that uses a star import, you'll probably find that the builder won't compile (unless what you're importing is .
 
 ---
 Examples of all of the above may be found in the kotlin-builder-example-usage sub-project.
