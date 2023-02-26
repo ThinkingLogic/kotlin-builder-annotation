@@ -1,3 +1,9 @@
+# Kotlin now supports Lombok's @Builder annotation
+
+As of December 2022, Kotlin now supports the Lombok @Builder annotation, removing the need to use this project.
+I strongly recommend you replace any usage of this library with the Lombok annotation instead.
+For more info, see: https://kotlinlang.org/docs/whatsnew18.html#support-for-lombok-s-builder-annotation.
+
 # kotlin-builder-annotation
 A builder annotation for Kotlin interoperability with Java - to give Java clients a clean way to construct Kotlin objects.
 This project aims to be a minimal viable replacement for the Lombok @Builder plugin for Kotlin code.
